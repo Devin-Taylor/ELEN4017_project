@@ -4,6 +4,7 @@ import (
 	"net"
 	"os"
 	"fmt"
+	"strings"
 )
 
 func main() {
@@ -39,16 +40,48 @@ func handlePacketConn(conn net.PacketConn) {
 }
 
 func handleClient(conn net.Conn) {
+	// close the connection after this function executes
 	defer conn.Close()
 
+	// get message of at maximum 512 bytes
 	var buf [512]byte
-	for {
-		n, err := conn.Read(buf[0:])
+	loop: for {
+		// read input 
+		_, err := conn.Read(buf[0:])
+		// if there was an error exit
 		if err != nil {
 			return
 		}
-		fmt.Println(string(buf[0:]))
-		_, err2 := conn.Write(buf[0:n])
+		// convert message to string and decompose it
+		message := string(buf[0:])
+		temp := strings.Split(message,"\x0d\x0a")
+		// get the request line for further processing
+		requestLine := temp[0]
+		// get the header lines 
+		// find out where the header lines end
+		var i int
+		for i = 1; i < len(temp); i++ {
+			if temp[i] == "" {
+				continue loop
+			}
+		}
+		//headerLines := temp[1:i]
+		//check if there is any content in the body
+		var bodyLines []string
+		if i  < len(temp) {
+			// get the body content
+			bodyLines = temp[i:len(temp)]
+		}
+		body := strings.Join(bodyLines, "\x0d\x0a")
+
+		// split the request line into it's components
+		requests := strings.Split(requestLine, "\x20")
+		method := requests[0]
+		url := requests[1]
+		version := requests[1]
+
+		//fmt.Println(string(buf[0:]))
+		_, err2 := conn.Write([]byte(method + url + version + body)) //conn.Write(buf[0:n])
 		if err2 != nil {
 			return
 		}

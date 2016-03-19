@@ -1,7 +1,7 @@
 package main
-import {
+import (
 	"strconv"
-}
+)
 
 type ResponseMessage struct{
 	version string
@@ -13,9 +13,9 @@ type ResponseMessage struct{
 
 // Function to convert the HTTP Response to a string in the correct format
 func (rm *ResponseMessage) toString() string {
-	const sp := "\x20"
-	const lf := "\x0a"
-	const cr := "\x0d"
+	const sp = "\x20"
+	const lf = "\x0a"
+	const cr = "\x0d"
 	responseString := rm.version + sp
 	responseString += strconv.Itoa(rm.statusCode) + sp
 	responseString += rm.phrase + cr + lf
