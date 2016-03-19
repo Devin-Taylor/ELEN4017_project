@@ -1,7 +1,7 @@
 package main
 
 import (
-	// "net"
+	"net"
 	"os"
 	"fmt"
 	// "io/ioutil"
@@ -9,6 +9,10 @@ import (
 )
 
 func main() {
+
+	service := os.Args[1]
+	connectionType := os.Args[2]
+
 	if len(os.Args) < 2 {
 		fmt.Fprintf(os.Stderr, "Usage: %s host:port  message", os.Args[0])
 		os.Exit(1)
@@ -17,31 +21,35 @@ func main() {
 	var config configSettings
 	config.initializeConfig()
 
-	switch os.Args[1] {
-		case "protocol": config.setProtocol(os.Args[2])
-		case "connection": config.setConnection(os.Args[2])
-		default: 
+	switch service {
+		case "protocol": 
+			config.protocol = connectionType
+			err := writeConfig(config)
+			checkError(err)
+			os.Exit(0)
+		case "connection": 
+			config.connection = connectionType
+			err := writeConfig(config)
+			checkError(err)
+			os.Exit(0)
+		default:
 	}
 
-	err := writeConfig(config)
+	conn, err := net.Dial(config.protocol, service)
 	checkError(err)
 
+	var request RequestMessage
+	request.setRequestLine("GET", "index.html", "HTTP/1.1")
+	request.setHeaders(os.Args[1], config.connection, "Mozilla/5.0", "en")
 
-
-/*	service := os.Args[1]
-	message := os.Args[2]
-
-	conn, err := net.Dial("udp", service)
-	checkError(err)
-
-	_, err = conn.Write([]byte(message))
+	_, err = conn.Write([]byte(request.toBytes()))
 	checkError(err)
 
 	var buf[512]byte
 	_, err = conn.Read(buf[0:])
 	checkError(err)
 
-	fmt.Println(string(buf[0:]))*/
+	fmt.Println(string(buf[0:]))
 
 	os.Exit(0)
 }
