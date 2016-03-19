@@ -9,17 +9,17 @@ import (
 func main() {
 	service := ":1235"
 
-	//listener, err := net.Listen("tcp", service)
-	packetConn, err := net.ListenPacket("udp", service)
+	listener, err := net.Listen("tcp", service)
+	//packetConn, err := net.ListenPacket("udp", service)
 	checkError(err)
 
 	for {
-		//conn, err := listener.Accept()
-		//if err != nil {
-		//	continue
-		//}
-		//go  handleClient(conn)
-		go handlePacketConn(packetConn)
+		conn, err := listener.Accept()
+		if err != nil {
+			continue
+		}
+		go  handleClient(conn)
+		//go handlePacketConn(packetConn)
 	}
 }
 
