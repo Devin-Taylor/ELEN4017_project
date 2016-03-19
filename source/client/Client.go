@@ -4,20 +4,29 @@ import (
 	// "net"
 	"os"
 	"fmt"
-	"io/ioutil"
-	"strings"
+	// "io/ioutil"
+	// "strings"
 )
 
 func main() {
-/*	if len(os.Args) != 3 {
+	if len(os.Args) < 2 {
 		fmt.Fprintf(os.Stderr, "Usage: %s host:port  message", os.Args[0])
 		os.Exit(1)
-	}*/
-	config_lines := readConfig()
+	}
+
+	var config configSettings
+	config.initializeConfig()
 
 	switch os.Args[1] {
-		case "protocol": setProtocol(os.Args[2])
+		case "protocol": config.setProtocol(os.Args[2])
+		case "connection": config.setConnection(os.Args[2])
+		default: 
 	}
+
+	err := writeConfig(config)
+	checkError(err)
+
+
 
 /*	service := os.Args[1]
 	message := os.Args[2]
@@ -44,15 +53,3 @@ func checkError(err error) {
 	}
 }
 
-func readConfig() []string {
-	config, err := ioutil.ReadFile("../config/connection_config.txt")
-	checkError(err)
-
-	lines := strings.Split(string(config), "\n")
-
-	return lines
-}
-
-func setProtocol(protocol string) {
-	
-}
