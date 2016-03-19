@@ -8,6 +8,10 @@ type RequestMessage struct {
 	entityBody string
 }
 
+func NewRequestMessage() *RequestMessage {
+    return &RequestMessage{headerLines: make(map[string]string)}
+}
+
 func (rm *RequestMessage) toString() string {
 	const sp = "\x20"
 	const lf = "\x0a"
@@ -31,6 +35,7 @@ func (rm *RequestMessage) toBytes() []byte {
 }
 
 func (rm *RequestMessage) setHeaders(host string, connection string, userAgent string, language string) {
+
 	rm.headerLines["Host"] = host
 	rm.headerLines["Connection"] = connection
 	rm.headerLines["User-agent"] = userAgent

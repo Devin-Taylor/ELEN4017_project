@@ -38,9 +38,9 @@ func main() {
 	conn, err := net.Dial(config.protocol, service)
 	checkError(err)
 
-	var request RequestMessage
+	request := NewRequestMessage()
 	request.setRequestLine("GET", "index.html", "HTTP/1.1")
-	request.setHeaders(os.Args[1], config.connection, "Mozilla/5.0", "en")
+	request.setHeaders(service, config.connection, "Mozilla/5.0", "en")
 
 	_, err = conn.Write([]byte(request.toBytes()))
 	checkError(err)
