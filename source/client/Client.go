@@ -1,38 +1,55 @@
 package main
 
 import (
-	// "net"
+	"net"
 	"os"
 	"fmt"
-	"io/ioutil"
-	"strings"
+	// "io/ioutil"
+	// "strings"
 )
 
 func main() {
-/*	if len(os.Args) != 3 {
+
+	service := os.Args[1]
+	connectionType := os.Args[2]
+
+	if len(os.Args) < 2 {
 		fmt.Fprintf(os.Stderr, "Usage: %s host:port  message", os.Args[0])
 		os.Exit(1)
-	}*/
-	config_lines := readConfig()
-
-	switch os.Args[1] {
-		case "protocol": setProtocol(os.Args[2])
 	}
 
-/*	service := os.Args[1]
-	message := os.Args[2]
+	var config configSettings
+	config.initializeConfig()
 
-	conn, err := net.Dial("udp", service)
+	switch service {
+		case "protocol": 
+			config.protocol = connectionType
+			err := writeConfig(config)
+			checkError(err)
+			os.Exit(0)
+		case "connection": 
+			config.connection = connectionType
+			err := writeConfig(config)
+			checkError(err)
+			os.Exit(0)
+		default:
+	}
+
+	conn, err := net.Dial(config.protocol, service)
 	checkError(err)
 
-	_, err = conn.Write([]byte(message))
+	request := NewRequestMessage()
+	request.setRequestLine("GET", "index.html", "HTTP/1.1")
+	request.setHeaders(service, config.connection, "Mozilla/5.0", "en")
+
+	_, err = conn.Write([]byte(request.toBytes()))
 	checkError(err)
 
 	var buf[512]byte
 	_, err = conn.Read(buf[0:])
 	checkError(err)
 
-	fmt.Println(string(buf[0:]))*/
+	fmt.Println(string(buf[0:]))
 
 	os.Exit(0)
 }
@@ -44,15 +61,3 @@ func checkError(err error) {
 	}
 }
 
-func readConfig() []string {
-	config, err := ioutil.ReadFile("../config/connection_config.txt")
-	checkError(err)
-
-	lines := strings.Split(string(config), "\n")
-
-	return lines
-}
-
-func setProtocol(protocol string) {
-	
-}
