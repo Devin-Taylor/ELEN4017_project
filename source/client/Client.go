@@ -43,7 +43,7 @@ func main() {
 	_, err = conn.Write([]byte(request.toBytes()))
 	checkError(err)
 	// call to handle server response
-	handleServer(conn, requestVersion)
+	handleServer(conn, requestVersion, method)
 
 // for debug
 	// var buf[512]byte
@@ -93,7 +93,7 @@ func getUserInputs() (string, string) {
     return method, url
 }
 
-func handleServer(conn net.Conn, requestVersion string) {
+func handleServer(conn net.Conn, requestVersion string, method string) {
 	// close the connection after this function executes
 	defer conn.Close()
 
@@ -107,8 +107,13 @@ func handleServer(conn net.Conn, requestVersion string) {
 	response := string(buf[0:])
 
 	_, code, _, _, body := decomposeResponse(response)
-	// call the function that decides which page gets launched
-	launchPage(code, body, requestVersion)
+	// if status = 200 then can be from multiple different requests
+	if code != "200" {
+		launchErrorPage(code, requestVersion)
+	} else {
+		handleOK(method, body)
+	}
+	
 
 }
 
@@ -147,7 +152,7 @@ func decomposeResponse(response string) (string, string, string, []string, strin
 
 }
 
-func launchPage(code string, body string, version string) {
+func launchErrorPage(code string, version string) {
 
 	/*tempfile, err := ioutil.TempFile(os.TempDir(), "temp")
 	checkError(err)
@@ -159,9 +164,6 @@ func launchPage(code string, body string, version string) {
 	switch code {
 		case "505": 
 			content = fmt.Sprint("<HTML><HEAD>\n<TITLE>505 %s Not Supported</TITLE>\n</HEAD><BODY>\n<H1>505 ",version ," Not Supported</H1>\n</BODY></HTML>")
-			break
-		case "200":
-			content = body
 			break
 		case "400":
 			content = "<HTML><HEAD>\n<TITLE>400 Bad Request</TITLE>\n</HEAD><BODY>\n<H1>400 Bad Request</H1>\n</BODY></HTML>"
@@ -185,4 +187,27 @@ func launchPage(code string, body string, version string) {
 
 /*	err = tempfile.Close()
 	checkError(err)*/
+}
+
+func handleOK(method string, body string) {
+
+	var content string
+
+	switch strings.ToUpper(method) {
+		case "GET": 
+			err := ioutil.WriteFile("../../temp/launch_file.html", []byte(body), 0644)
+			checkError(err)
+			cmd := exec.Command("xdg-open", "../../temp/launch_file.html")
+			err = cmd.Start()
+			checkError(err)
+			break
+		default:
+			content = "<HTML><HEAD>\n<TITLE>Request expired</TITLE>\n</HEAD><BODY>\n<H1>Request expired</H1>\n</BODY></HTML>"
+			err := ioutil.WriteFile("../../temp/launch_file.html", []byte(content), 0644)
+			checkError(err)
+			cmd := exec.Command("xdg-open", "../../temp/launch_file.html")
+			err = cmd.Start()
+			checkError(err)
+			break
+	}
 }
