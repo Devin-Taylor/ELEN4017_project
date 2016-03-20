@@ -45,7 +45,7 @@ func handleClient(conn net.Conn) {
 
 	// get message of at maximum 512 bytes
 	var buf [512]byte
-	loop: for {
+	for {
 		// read input 
 		_, err := conn.Read(buf[0:])
 		// if there was an error exit
@@ -62,7 +62,7 @@ func handleClient(conn net.Conn) {
 		var i int
 		for i = 1; i < len(temp); i++ {
 			if temp[i] == "" {
-				continue loop
+				break
 			}
 		}
 		//headerLines := temp[1:i]
@@ -78,7 +78,7 @@ func handleClient(conn net.Conn) {
 		requests := strings.Split(requestLine, "\x20")
 		method := requests[0]
 		url := requests[1]
-		version := requests[1]
+		version := requests[2]
 
 		//fmt.Println(string(buf[0:]))
 		_, err2 := conn.Write([]byte(method + url + version + body)) //conn.Write(buf[0:n])
