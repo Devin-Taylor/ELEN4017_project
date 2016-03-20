@@ -4,7 +4,7 @@ import (
 	"net"
 	"os"
 	"fmt"
-	"bufio"
+	// "bufio"
 	// "io/ioutil"
 	// "strings"
 )
@@ -76,11 +76,16 @@ func checkInput(config configSettings, service string, connectionType string) co
 }
 
 func getUserInputs() (string, string) {
-	reader := bufio.NewReader(os.Stdin)
-    fmt.Print("Enter method: ")
-    method,_ := reader.ReadString('\n')
-    fmt.Print("Enter URL: ")
-    url,_ := reader.ReadString('\n')
+	var method string
+	var url string
+
+	// reader := bufio.NewReader(os.Stdin)
+    fmt.Println("Enter method: ")
+    fmt.Scanf("%s", &method)
+    fmt.Println("Enter URL: ")
+    fmt.Scanf("%s", &url)
+    // method,_ := reader.ReadString('\n')
+    // url,_ := reader.ReadString('\n')
 
     return method, url
 }
