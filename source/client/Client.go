@@ -4,23 +4,61 @@ import (
 	"net"
 	"os"
 	"fmt"
+	"bufio"
 	// "io/ioutil"
 	// "strings"
 )
 
 func main() {
-
+	// get the arguments passed to the code
 	service := os.Args[1]
-	connectionType := os.Args[2]
-
+	// if no arguments replied then error
 	if len(os.Args) < 2 {
 		fmt.Fprintf(os.Stderr, "Usage: %s host:port  message", os.Args[0])
 		os.Exit(1)
 	}
-
+	// initialize config settings variables
 	var config configSettings
 	config.initializeConfig()
+	// determine of the input required config settings to be changed
+	if len(os.Args) < 2 {
+		connectionType := os.Args[2]
+		config = checkInput(config, service, connectionType)
+	}
+	// get the user to input the method to be used as well as the file/url requested
+	method, url := getUserInputs()
+	// create connection
+	conn, err := net.Dial(config.protocol, service)
+	checkError(err)
+	// initialize request message struct
+	request := NewRequestMessage()
+	// set request line information
+	request.setRequestLine(method, url, "HTTP/1.1")
+	// set header information
+	request.setHeaders(service, config.connection, "Mozilla/5.0", "en")
+	// write request information to the server
+	_, err = conn.Write([]byte(request.toBytes()))
+	checkError(err)
 
+
+
+// for debug
+	var buf[512]byte
+	_, err = conn.Read(buf[0:])
+	checkError(err)
+	fmt.Println(string(buf[0:]))
+
+	os.Exit(0)
+}
+
+func checkError(err error) {
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Fatal error: %s", err.Error())
+		os.Exit(1)
+	}
+}
+
+func checkInput(config configSettings, service string, connectionType string) configSettings {
 	switch service {
 		case "protocol": 
 			config.protocol = connectionType
@@ -34,30 +72,15 @@ func main() {
 			os.Exit(0)
 		default:
 	}
-
-	conn, err := net.Dial(config.protocol, service)
-	checkError(err)
-
-	request := NewRequestMessage()
-	request.setRequestLine("GET", "index.html", "HTTP/1.1")
-	request.setHeaders(service, config.connection, "Mozilla/5.0", "en")
-
-	_, err = conn.Write([]byte(request.toBytes()))
-	checkError(err)
-
-	var buf[512]byte
-	_, err = conn.Read(buf[0:])
-	checkError(err)
-
-	fmt.Println(string(buf[0:]))
-
-	os.Exit(0)
+	return config
 }
 
-func checkError(err error) {
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Fatal error: %s", err.Error())
-		os.Exit(1)
-	}
-}
+func getUserInputs() (string, string) {
+	reader := bufio.NewReader(os.Stdin)
+    fmt.Print("Enter method: ")
+    method,_ := reader.ReadString('\n')
+    fmt.Print("Enter URL: ")
+    url,_ := reader.ReadString('\n')
 
+    return method, url
+}
