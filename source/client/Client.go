@@ -22,38 +22,34 @@ func main() {
 	var config configSettings
 	config.initializeConfig()
 	// determine of the input required config settings to be changed
-	if len(os.Args) < 2 {
+	if len(os.Args) > 2 {
 		connectionType := os.Args[2]
-		config = checkInput(config, service, connectionType)
+		checkInput(config, service, connectionType)
+	}
+	// initialize request message struct
+	request := NewRequestMessage()
+	// set header information
+	request.setHeaders(service, config.connection, "Mozilla/5.0", "en")
+	// check if proxy is required
+	if strings.ToUpper(config.proxy) == "ON" {
+		service = promptProxy()
 	}
 	// get the user to input the method to be used as well as the file/url requested
-	method, url := getUserInputs()
+	method, url, entityBody := getUserInputs()
 	// create connection
 	conn, err := net.Dial(config.protocol, service)
 	checkError(err)
-	// initialize request message struct
-	request := NewRequestMessage()
 	// set request version as need to when launch 505 error later on
 	requestVersion := "HTTP/1.1"
 	// set request line information
 	request.setRequestLine(method, url, requestVersion)
-	// set header information
-	request.setHeaders(service, config.connection, "Mozilla/5.0", "en")
+	// set entity body
+	request.setEntityBody(entityBody)
 	// write request information to the server
 	_, err = conn.Write([]byte(request.toBytes()))
 	checkError(err)
 	// call to handle server response
-	handleServer(conn, requestVersion, method)
-
-// for debug
-	// var buf[512]byte
-	// _, err = conn.Read(buf[0:])
-	// checkError(err)
-
-	// response := string(buf[0:])
-
-	
-	// fmt.Println()
+	handleServer(conn, method)
 
 	os.Exit(0)
 }
@@ -65,35 +61,47 @@ func checkError(err error) {
 	}
 }
 
-func checkInput(config configSettings, service string, connectionType string) configSettings {
+func checkInput(config configSettings, service string, connectionType string) {
 	switch service {
 		case "protocol": 
 			config.protocol = connectionType
-			err := writeConfig(config)
-			checkError(err)
-			os.Exit(0)
+			break
 		case "connection": 
 			config.connection = connectionType
-			err := writeConfig(config)
-			checkError(err)
-			os.Exit(0)
+			break
+		case "proxy":
+			config.proxy = connectionType
+			break
 		default:
 	}
-	return config
+
+	err := writeConfig(config)
+	checkError(err)
+	os.Exit(0)
 }
 
-func getUserInputs() (string, string) {
+func getUserInputs() (string, string, string) {
 	var method string
 	var url string
-    fmt.Println("Enter method: ")
+    fmt.Println("Enter method ")
     fmt.Scanf("%s", &method)
-    fmt.Println("Enter URL: ")
+    fmt.Println("Enter URL ")
     fmt.Scanf("%s", &url)
 
-    return method, url
+    var entityBody string
+
+    if method == "POST" {
+    	fmt.Println("Enter Text ")
+    	fmt.Scanf("%s", &entityBody)
+    } else {
+    	entityBody = ""
+    }
+
+
+    return method, url, entityBody
 }
 
-func handleServer(conn net.Conn, requestVersion string, method string) {
+func handleServer(conn net.Conn, method string) {
 	// close the connection after this function executes
 	defer conn.Close()
 
@@ -106,15 +114,26 @@ func handleServer(conn net.Conn, requestVersion string, method string) {
 	// convert message to string and decompose it
 	response := string(buf[0:])
 
-	_, code, _, _, body := decomposeResponse(response)
+	version, code, status, headerLines, body := decomposeResponse(response)
 	// if status = 200 then can be from multiple different requests
-	if code != "200" {
-		launchErrorPage(code, requestVersion)
-	} else {
-		handleOK(method, body)
-	}
-	
 
+	printToConsole(version, code, status, headerLines, body)
+	
+	if method != "HEAD" {
+		launchPage(body)
+	}
+}
+
+func printToConsole(version string, code string, status string, headerLines []string, body string) {
+
+	var allHeaders string
+
+	for _, value := range headerLines {
+		allHeaders = allHeaders + value + "\n"
+	}
+
+	content := version + " " + code + " " + status + "\n" + allHeaders + "\n\n" + body
+	fmt.Println(content) 
 }
 
 func decomposeResponse(response string) (string, string, string, []string, string){
@@ -147,67 +166,23 @@ func decomposeResponse(response string) (string, string, string, []string, strin
 		status := responses[2]
 		code := responses[1]
 		version := responses[0]
-
 		return version, code, status, headerLines, body
 
 }
 
-func launchErrorPage(code string, version string) {
+func launchPage(body string) {
 
-	/*tempfile, err := ioutil.TempFile(os.TempDir(), "temp")
+	err := ioutil.WriteFile("../../temp/launch_file.html", []byte(body), 0644)
 	checkError(err)
-
-	defer os.Remove(tempfile.Name())*/
-
-	var content string
-
-	switch code {
-		case "505": 
-			content = fmt.Sprint("<HTML><HEAD>\n<TITLE>505 %s Not Supported</TITLE>\n</HEAD><BODY>\n<H1>505 ",version ," Not Supported</H1>\n</BODY></HTML>")
-			break
-		case "400":
-			content = "<HTML><HEAD>\n<TITLE>400 Bad Request</TITLE>\n</HEAD><BODY>\n<H1>400 Bad Request</H1>\n</BODY></HTML>"
-			break
-		default:
-			content = "<HTML><HEAD>\n<TITLE>Request expired</TITLE>\n</HEAD><BODY>\n<H1>Request expired</H1>\n</BODY></HTML>"
-			break
-	}
-	/*_, err = tempfile.Write([]byte(content))
-	checkError(err)*/
-
-	// write contents to file
-	err := ioutil.WriteFile("../../temp/launch_file.html", []byte(content), 0644)
-	checkError(err)
-	// launch default browser with .html file
 	cmd := exec.Command("xdg-open", "../../temp/launch_file.html")
 	err = cmd.Start()
 	checkError(err)
-	// err = cmd.Wait()
-	// checkError(err)
-
-/*	err = tempfile.Close()
-	checkError(err)*/
 }
 
-func handleOK(method string, body string) {
+func promptProxy() string {
+	var proxyUrl string
+    fmt.Println("Enter proxy URL:port ")
+    fmt.Scanf("%s", &proxyUrl)	
 
-	var content string
-
-	switch strings.ToUpper(method) {
-		case "GET": 
-			err := ioutil.WriteFile("../../temp/launch_file.html", []byte(body), 0644)
-			checkError(err)
-			cmd := exec.Command("xdg-open", "../../temp/launch_file.html")
-			err = cmd.Start()
-			checkError(err)
-			break
-		default:
-			content = "<HTML><HEAD>\n<TITLE>Request expired</TITLE>\n</HEAD><BODY>\n<H1>Request expired</H1>\n</BODY></HTML>"
-			err := ioutil.WriteFile("../../temp/launch_file.html", []byte(content), 0644)
-			checkError(err)
-			cmd := exec.Command("xdg-open", "../../temp/launch_file.html")
-			err = cmd.Start()
-			checkError(err)
-			break
-	}
+    return(proxyUrl)
 }

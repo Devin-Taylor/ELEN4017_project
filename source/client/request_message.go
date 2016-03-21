@@ -47,3 +47,7 @@ func (rm *RequestMessage) setRequestLine(method string, url string, version stri
 	rm.url = url
 	rm.version = version
 }
+
+func (rm *RequestMessage) setEntityBody(body string) {
+	rm.entityBody = body
+}
