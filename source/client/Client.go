@@ -22,23 +22,27 @@ func main() {
 	var config configSettings
 	config.initializeConfig()
 	// determine of the input required config settings to be changed
-	if len(os.Args) < 2 {
+	if len(os.Args) > 2 {
 		connectionType := os.Args[2]
-		config = checkInput(config, service, connectionType)
+		checkInput(config, service, connectionType)
+	}
+	// initialize request message struct
+	request := NewRequestMessage()
+	// set header information
+	request.setHeaders(service, config.connection, "Mozilla/5.0", "en")
+	// check if proxy is required
+	if strings.ToUpper(config.proxy) == "ON" {
+		service = promptProxy()
 	}
 	// get the user to input the method to be used as well as the file/url requested
 	method, url, entityBody := getUserInputs()
 	// create connection
 	conn, err := net.Dial(config.protocol, service)
 	checkError(err)
-	// initialize request message struct
-	request := NewRequestMessage()
 	// set request version as need to when launch 505 error later on
 	requestVersion := "HTTP/1.1"
 	// set request line information
 	request.setRequestLine(method, url, requestVersion)
-	// set header information
-	request.setHeaders(service, config.connection, "Mozilla/5.0", "en")
 	// set entity body
 	request.setEntityBody(entityBody)
 	// write request information to the server
@@ -57,35 +61,37 @@ func checkError(err error) {
 	}
 }
 
-func checkInput(config configSettings, service string, connectionType string) configSettings {
+func checkInput(config configSettings, service string, connectionType string) {
 	switch service {
 		case "protocol": 
 			config.protocol = connectionType
-			err := writeConfig(config)
-			checkError(err)
-			os.Exit(0)
+			break
 		case "connection": 
 			config.connection = connectionType
-			err := writeConfig(config)
-			checkError(err)
-			os.Exit(0)
+			break
+		case "proxy":
+			config.proxy = connectionType
+			break
 		default:
 	}
-	return config
+
+	err := writeConfig(config)
+	checkError(err)
+	os.Exit(0)
 }
 
 func getUserInputs() (string, string, string) {
 	var method string
 	var url string
-    fmt.Println("Enter method: ")
+    fmt.Println("Enter method ")
     fmt.Scanf("%s", &method)
-    fmt.Println("Enter URL: ")
+    fmt.Println("Enter URL ")
     fmt.Scanf("%s", &url)
 
     var entityBody string
 
     if method == "POST" {
-    	fmt.Println("Enter Text: ")
+    	fmt.Println("Enter Text ")
     	fmt.Scanf("%s", &entityBody)
     } else {
     	entityBody = ""
@@ -171,4 +177,12 @@ func launchPage(body string) {
 	cmd := exec.Command("xdg-open", "../../temp/launch_file.html")
 	err = cmd.Start()
 	checkError(err)
+}
+
+func promptProxy() string {
+	var proxyUrl string
+    fmt.Println("Enter proxy URL:port ")
+    fmt.Scanf("%s", &proxyUrl)	
+
+    return(proxyUrl)
 }
