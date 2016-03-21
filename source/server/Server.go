@@ -5,9 +5,12 @@ import (
 	"os"
 	"fmt"
 	"strings"
+	"io/ioutil"
+	"log"
 )
 
 const httpVersion = "HTTP/1.1"
+const path = "../../objects/"
 
 func main() {
 	service := ":1235"
@@ -31,6 +34,10 @@ func handleClient(conn net.Conn) {
 	// close the connection after this function executes
 	defer conn.Close()
 
+	// load the map describing location changes
+	locationMap := loadMovesMap()
+	//fmt.Println(locationMap["test/index.html"])
+
 	// get message of at maximum 512 bytes
 	var buf [512]byte
 	for {
@@ -42,8 +49,8 @@ func handleClient(conn net.Conn) {
 		}
 		// convert message to string and decompose it
 		message := string(buf[0:])
-				//fmt.Println(string(buf[0:]))
-		method, _, version, _, _ := decomposeRequest(message)
+
+		method, url, version, _, _ := decomposeRequest(message)
 
 		composeResponse := true
 		var response ResponseMessage
@@ -51,35 +58,77 @@ func handleClient(conn net.Conn) {
 
 		// make sure that version is compatible with server otherwise send a 505 response
 		if version != httpVersion && composeResponse {
+			fmt.Println("505")
 			// compose 505
 			response.statusCode = "505"
 			response.phrase = "HTTP Version Not Supported"
-			// set problem flag
+			// set flag
 			composeResponse = false
 		}
 
-		// check if url is valid or if it has been moved
+		// check if url has been moved
+		if locationMap[url] != "" && composeResponse {
+			fmt.Println("301")
+			// compose 301
+			response.statusCode = "301"
+			response.phrase = "Moved Permanently"
+			response.entityBody = locationMap[url]
+			// set flag
+			composeResponse = false
+		}
+
+		// check if url is valid 
+		exists, _ := fileExists(path + url)
+		if !exists && composeResponse {
+			fmt.Println("404")
+			// compose 404
+			response.statusCode = "404"
+			response.phrase = "Not Found"
+			// set flag
+			composeResponse = false
+		}
 
 		// check what method was requested
 		if composeResponse {
 			switch strings.ToUpper(method) {
 				case "GET":
+					fmt.Println("200")
 					// compose 200
                                         response.statusCode = "200"
 					response.phrase = "OK"
-					response.entityBody = "<temp>test</temp>"
-					// set problem flag 
+
+					file, err := os.Open(path + url)
+					if err != nil {
+						log.Fatal(err)
+					}
+					defer file.Close()
+
+					b, err := ioutil.ReadAll(file)
+					html := string(b)
+
+					response.entityBody = html
+
+					// set flag
 					composeResponse = false
+				case "HEAD":
+
+				case "PUT":
+
+				case "DELETE":
+
+				case "POST":
 				default:
+					fmt.Println("400")
 					// compose 400
 					response.statusCode = "400"
 					response.phrase = "Bad Request"
-					// set problem flag
+					// set flag
 					composeResponse = false
 			}
 		}
-
-		_, err2 := conn.Write(response.ToBytes()) //conn.Write(buf[0:n])
+		//fmt.Println(method)
+		//fmt.Println(version)
+		_, err2 := conn.Write(response.ToBytes())
 		if err2 != nil {
 			return
 		}
@@ -126,6 +175,38 @@ func checkError(err error) {
 		fmt.Fprintf(os.Stderr, "Fatal error: %s", err.Error())
 		os.Exit(1)
 	}
+}
+
+func fileExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil { return true, nil }
+	if os.IsNotExist(err) { return false, nil }
+	return true, err
+}
+
+func loadMovesMap() map[string]string {
+	const mapLocation = "../../config/moved_objects.txt"
+
+	file, err := os.Open(mapLocation)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	b, err := ioutil.ReadAll(file)
+	mapping := string(b)
+
+	lines :=  strings.Split(mapping, "\n")
+	lines = lines[0:len(lines)-1]
+	locationMap := make(map[string]string)
+
+	for _, value := range lines {
+		locations := strings.Split(value, "\x20")
+		fmt.Println(locations)
+		locationMap[locations[0]] = locations[1]
+	}
+
+	return locationMap
 }
 
 /*func handlePacketConn(conn net.PacketConn) {
