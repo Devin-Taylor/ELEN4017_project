@@ -81,7 +81,7 @@ func handleClient(conn net.Conn) {
 
 		// check if url is valid 
 		exists, _ := fileExists(path + url)
-		if !exists && composeResponse && strings.ToUpper(method) != "PUT" {
+		if !exists && composeResponse && !(strings.ToUpper(method) == "PUT" || strings.ToUpper(method) == "POST") {
 			fmt.Println("404")
 			// compose 404
 			response.statusCode = "404"
@@ -132,7 +132,7 @@ func handleClient(conn net.Conn) {
 
 					// convert the html to bytes and write to file
 					data := []byte(body)
-					err := ioutil.WriteFile(url, data, 0644)
+					err := ioutil.WriteFile(path + url, data, 0644)
 					checkError(err)
 
 					response.entityBody = "<html>\n<body>\n<h1>The file was created.</h1>\n</body>\n</html>"
@@ -147,7 +147,7 @@ func handleClient(conn net.Conn) {
 					response.phrase = "OK"
 
 					// delete the file
-					err := os.RemoveAll(url)
+					err := os.RemoveAll(path + url)
 					checkError(err)
 
 					response.entityBody = "<html>\n<body>\n<h1>URL deleted.</h1>\n</body>\n</html>"
@@ -163,7 +163,7 @@ func handleClient(conn net.Conn) {
 
 					// write to file
 					data := []byte(body)
-					err := ioutil.WriteFile(url, data, 0644)
+					err := ioutil.WriteFile(path + url, data, 0644)
 					checkError(err)
 
 					response.entityBody = "<html>\n<body>\n<h1>Request Processed Successfully.</h1>\n</body>\n</html>"
@@ -258,7 +258,7 @@ func loadMovesMap() map[string]string {
 
 	for _, value := range lines {
 		locations := strings.Split(value, "\x20")
-		fmt.Println(locations)
+		//fmt.Println(locations)
 		locationMap[locations[0]] = locations[1]
 	}
 
