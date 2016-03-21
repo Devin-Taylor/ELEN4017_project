@@ -90,7 +90,7 @@ func getUserInputs() (string, string, string) {
 
     var entityBody string
 
-    if method == "POST" {
+    if strings.ToUpper(method) == "POST" || strings.ToUpper(method) == "PUT" {
     	fmt.Println("Enter Text ")
     	fmt.Scanf("%s", &entityBody)
     } else {
