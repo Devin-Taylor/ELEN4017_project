@@ -53,7 +53,7 @@ func handleClient(conn net.Conn) {
 		method, url, version, _, _ := decomposeRequest(message)
 
 		composeResponse := true
-		var response ResponseMessage
+		var response = NewResponseMessage()
 		response.version = httpVersion
 
 		// make sure that version is compatible with server otherwise send a 505 response
@@ -62,6 +62,7 @@ func handleClient(conn net.Conn) {
 			// compose 505
 			response.statusCode = "505"
 			response.phrase = "HTTP Version Not Supported"
+			response.entityBody = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n<title>505 Version Not Supported</title>\n</head>\n<body>\n<h1>Version Not Supported</h1>\n<p>Your HTTP version is not supported by this server, please use HTTP/1.1.</p>\n</body>\n</html>"
 			// set flag
 			composeResponse = false
 		}
@@ -72,7 +73,8 @@ func handleClient(conn net.Conn) {
 			// compose 301
 			response.statusCode = "301"
 			response.phrase = "Moved Permanently"
-			response.entityBody = locationMap[url]
+			response.headerLines["location:"] = locationMap[url]
+			response.entityBody = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n<title>301 Moved Permanently</title>\n</head>\n<body>\n<h1>Moved Permanently</h1>\n<p>The document has moved <a href=\"" + url + "\">here</a>.</p>\n</body>\n</html>"
 			// set flag
 			composeResponse = false
 		}
@@ -84,6 +86,7 @@ func handleClient(conn net.Conn) {
 			// compose 404
 			response.statusCode = "404"
 			response.phrase = "Not Found"
+			response.entityBody = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n<title>404 Not Found</title>\n</head>\n<body>\n<h1>Not Found</h1>\n<p>The requested URL " + url + " was not found on this server.</p>\n</body>\n</html>"
 			// set flag
 			composeResponse = false
 		}
@@ -122,6 +125,7 @@ func handleClient(conn net.Conn) {
 					// compose 400
 					response.statusCode = "400"
 					response.phrase = "Bad Request"
+					response.entityBody = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n<title>400 Bad Request</title>\n</head>\n<body>\n<h1>Bad Request</h1>\n<p>Your browser sent a request that this server could not understand.</p>\n<p>The request line contained invalid characters following the protocol string.</p>\n</body>\n</html>"
 					// set flag
 					composeResponse = false
 			}
