@@ -2,6 +2,9 @@ package main
 
 import (
 	"net"
+	"strings"
+	"fmt"
+	"os"
 )
 
 func main() {
@@ -10,22 +13,89 @@ func main() {
 	listener, err := net.Listen("tcp", service)
 	//packetConn, err := net.ListenPacket("udp", service)
 	checkError(err)
+	// initialize map
+	innerMap := make(map[string]string)
+	urlMap := make(map[string]map[string]string)
+	// initialize channel to allow multiple threads to communicate between each other
+	channel := make(chan [3]string)
 
 	for {
 	conn, err := listener.Accept()
 	if err != nil {
 		continue
 	}
-	go  handleClient(conn)
-	//go handlePacketConn(packetConn)
+	go  handleClient(conn, channel)
+	// read from channel and assign array to temporary array
+	returnArray  := <- channel
+	// add mapping values to the map
+	innerMap[returnArray[0]] = returnArray[2]
+	urlMap[returnArray[1]] = innerMap
+
+	fmt.Println(urlMap)
 	}
 }
 
-func handleClient(conn net.Conn) {
-	
-	method, url, version, _, body := decomposeRequest(message)
+func checkError(err error) {
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Fatal error: %s", err.Error())
+		os.Exit(1)
+	}
+}
 
+func handleClient(conn net.Conn, channel chan [3]string) {
+
+	// defer conn.Close()
+
+	// get message of at maximum 512 bytes
+	var buf [512]byte
+	for {
+		// read input 
+		_, err := conn.Read(buf[0:])
+		// if there was an error exit
+		if err != nil {
+			return
+		}
+		// convert message to string and decompose it
+		message := string(buf[0:])
 	
+	method, url, _, headerLines, _ := decomposeRequest(message)
+
+	host := mapRequest(url, headerLines, channel, conn.RemoteAddr().String(), method)
+
+	serverResponse := relayMessageToServer(message, host)
+
+	_, err = conn.Write([]byte(serverResponse))
+	checkError(err)
+	}
+}
+
+func relayMessageToServer(relayRequest string, host string) string {
+
+	conn, err := net.Dial("tcp", host)
+	checkError(err)
+	// write request information to the server
+	_, err = conn.Write([]byte(relayRequest))
+	checkError(err)
+	// call to handle server response
+	serverResponse := handleServer(conn)
+
+	return serverResponse
+}
+
+func handleServer(conn net.Conn) string {
+	// close the connection after this function executes
+	defer conn.Close()
+
+	// get message of at maximum 512 bytes
+	var buf [512]byte
+	// read input 
+	_, err := conn.Read(buf[0:])
+	// if there was an error exit
+	checkError(err)
+	// convert message to string and decompose it
+	response := string(buf[0:])
+
+	return response
 }
 
 func decomposeRequest(request string) (string, string, string, []string, string){
@@ -63,4 +133,26 @@ func decomposeRequest(request string) (string, string, string, []string, string)
 
 }
 
-func mapRequest()
+func mapRequest(url string, headerLines []string, channel chan [3]string, clientAddress string, method string) string {
+
+	var splitString []string
+	var tempMap [3]string
+	var host string
+	// find the hosts address
+	for _, value := range headerLines {
+		splitString = strings.Split(value, ": ")
+		if(strings.ToUpper(splitString[0]) == "HOST"){
+			host = splitString[1]
+			break
+		}
+	}
+	// create host name and url as a single item
+	tempMap[0] = host + url
+	// add clients address to the array
+	tempMap[1] = clientAddress
+	tempMap[2] = method
+	// push the map values into the channel
+	channel <- tempMap
+
+	return host
+}
