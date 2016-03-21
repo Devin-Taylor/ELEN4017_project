@@ -59,43 +59,35 @@ func handleClient(conn net.Conn, channel chan [3]string) {
 		message := string(buf[0:])
 	
 	method, url, _, headerLines, _ := decomposeRequest(message)
-
+	// get the host ID
 	host := mapRequest(url, headerLines, channel, conn.RemoteAddr().String(), method)
-
-	serverResponse := relayMessageToServer(message, host)
-
+	// get the response message from the server
+	serverResponse := handleServer(message, host)
+	// write the response message back to the client
 	_, err = conn.Write([]byte(serverResponse))
 	checkError(err)
 	}
 }
 
-func relayMessageToServer(relayRequest string, host string) string {
-
+func handleServer(relayRequest string, host string) string {
+	// initiate connection
 	conn, err := net.Dial("tcp", host)
 	checkError(err)
 	// write request information to the server
 	_, err = conn.Write([]byte(relayRequest))
 	checkError(err)
-	// call to handle server response
-	serverResponse := handleServer(conn)
-
-	return serverResponse
-}
-
-func handleServer(conn net.Conn) string {
 	// close the connection after this function executes
 	defer conn.Close()
-
 	// get message of at maximum 512 bytes
 	var buf [512]byte
 	// read input 
-	_, err := conn.Read(buf[0:])
+	_, err = conn.Read(buf[0:])
 	// if there was an error exit
 	checkError(err)
 	// convert message to string and decompose it
-	response := string(buf[0:])
+	serverResponse := string(buf[0:])
 
-	return response
+	return serverResponse
 }
 
 func decomposeRequest(request string) (string, string, string, []string, string){
