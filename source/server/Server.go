@@ -50,10 +50,10 @@ func handleClient(conn net.Conn) {
 		// convert message to string and decompose it
 		message := string(buf[0:])
 
-		method, url, version, _, _ := decomposeRequest(message)
+		method, url, version, _, body := decomposeRequest(message)
 
 		composeResponse := true
-		var response ResponseMessage
+		var response = NewResponseMessage()
 		response.version = httpVersion
 
 		// make sure that version is compatible with server otherwise send a 505 response
@@ -62,6 +62,7 @@ func handleClient(conn net.Conn) {
 			// compose 505
 			response.statusCode = "505"
 			response.phrase = "HTTP Version Not Supported"
+			response.entityBody = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n<title>505 Version Not Supported</title>\n</head>\n<body>\n<h1>Version Not Supported</h1>\n<p>Your HTTP version is not supported by this server, please use HTTP/1.1.</p>\n</body>\n</html>"
 			// set flag
 			composeResponse = false
 		}
@@ -72,18 +73,20 @@ func handleClient(conn net.Conn) {
 			// compose 301
 			response.statusCode = "301"
 			response.phrase = "Moved Permanently"
-			response.entityBody = locationMap[url]
+			response.headerLines["location:"] = locationMap[url]
+			response.entityBody = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n<title>301 Moved Permanently</title>\n</head>\n<body>\n<h1>Moved Permanently</h1>\n<p>The document has moved <a href=\"" + url + "\">here</a>.</p>\n</body>\n</html>"
 			// set flag
 			composeResponse = false
 		}
 
 		// check if url is valid 
 		exists, _ := fileExists(path + url)
-		if !exists && composeResponse {
+		if !exists && composeResponse && strings.ToUpper(method) != "PUT" {
 			fmt.Println("404")
 			// compose 404
 			response.statusCode = "404"
 			response.phrase = "Not Found"
+			response.entityBody = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n<title>404 Not Found</title>\n</head>\n<body>\n<h1>Not Found</h1>\n<p>The requested URL " + url + " was not found on this server.</p>\n</body>\n</html>"
 			// set flag
 			composeResponse = false
 		}
@@ -97,12 +100,13 @@ func handleClient(conn net.Conn) {
                                         response.statusCode = "200"
 					response.phrase = "OK"
 
+					// load html file
 					file, err := os.Open(path + url)
 					if err != nil {
 						log.Fatal(err)
 					}
 					defer file.Close()
-
+					// read from file and convert to string
 					b, err := ioutil.ReadAll(file)
 					html := string(b)
 
@@ -110,20 +114,72 @@ func handleClient(conn net.Conn) {
 
 					// set flag
 					composeResponse = false
+
 				case "HEAD":
+					fmt.Println("200")
+					// compose 200
+                                        response.statusCode = "200"
+					response.phrase = "OK"
+
+					// set flag
+					composeResponse = false
 
 				case "PUT":
+					fmt.Println("200")
+					// compose 200
+                                        response.statusCode = "200"
+					response.phrase = "OK"
+
+					// convert the html to bytes and write to file
+					data := []byte(body)
+					err := ioutil.WriteFile(url, data, 0644)
+					checkError(err)
+
+					response.entityBody = "<html>\n<body>\n<h1>The file was created.</h1>\n</body>\n</html>"
+
+					// set flag
+					composeResponse = false
 
 				case "DELETE":
+					fmt.Println("200")
+					// compose 200
+					response.statusCode = "200"
+					response.phrase = "OK"
+
+					// delete the file
+					err := os.RemoveAll(url)
+					checkError(err)
+
+					response.entityBody = "<html>\n<body>\n<h1>URL deleted.</h1>\n</body>\n</html>"
+
+					//set flag
+					composeResponse = false
 
 				case "POST":
+					fmt.Println("200")
+					// compose 200
+                                        response.statusCode = "200"
+					response.phrase = "OK"
+
+					// write to file
+					data := []byte(body)
+					err := ioutil.WriteFile(url, data, 0644)
+					checkError(err)
+
+					response.entityBody = "<html>\n<body>\n<h1>Request Processed Successfully.</h1>\n</body>\n</html>"
+
+					// set flag
+					composeResponse = false
+
 				default:
 					fmt.Println("400")
 					// compose 400
 					response.statusCode = "400"
 					response.phrase = "Bad Request"
+					response.entityBody = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n<title>400 Bad Request</title>\n</head>\n<body>\n<h1>Bad Request</h1>\n<p>Your browser sent a request that this server could not understand.</p>\n<p>The request line contained invalid characters following the protocol string.</p>\n</body>\n</html>"
 					// set flag
 					composeResponse = false
+
 			}
 		}
 		//fmt.Println(method)

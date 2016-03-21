@@ -8,6 +8,10 @@ type ResponseMessage struct{
 	entityBody string
 }
 
+func NewResponseMessage() *ResponseMessage {
+    return &ResponseMessage{headerLines: make(map[string]string)}
+}
+
 // Function to convert the HTTP Response to a string in the correct format
 func (rm *ResponseMessage) ToString() string {
 	const sp = "\x20"
