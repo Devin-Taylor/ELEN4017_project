@@ -106,7 +106,7 @@ func handleServer(conn net.Conn, method string) {
 	defer conn.Close()
 
 	// get message of at maximum 512 bytes
-	var buf [512]byte
+	var buf [1024]byte
 	// read input 
 	_, err := conn.Read(buf[0:])
 	// if there was an error exit
