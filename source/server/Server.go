@@ -146,7 +146,7 @@ func composeResponse(message string) *ResponseMessage{
 			// compose 404
 			response.statusCode = "404"
 			response.phrase = "Not Found"
-			response.entityBody = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n<title>404 Not Found</title>\n</head>\n<body>\n<h1>Not Found</h1>\n<p>The requested URL " + url + " was not found on this server.</p>\n</body>\n</html>"
+			response.entityBody = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n<title>404 Not Found</title>\n</head>\n<body>\n<h1>Not BLAAAH Found</h1>\n<p>The requested URL " + url + " was not found on this server.</p>\n</body>\n</html>"
 			// set flag
 			composeResponse = false
 		}
