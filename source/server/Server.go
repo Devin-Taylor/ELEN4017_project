@@ -25,6 +25,7 @@ func main() {
 		if err != nil {
 			continue
 		}
+
 		// handle the TCP connection
 		go  handleTCPClient(conn)
 
@@ -58,11 +59,21 @@ func handleUDPClient(conn net.PacketConn) {
 	}
 }
 
+func persist(message string) bool {
+	// get headers
+	_, _, _, headers, _ := decomposeRequest(message)
+	switch (headers["Connection:"]) {
+		case "keep-alive":
+			return true
+		case "close":
+			return false
+		default:
+			return false
+	}
+}
+
 
 func handleTCPClient(conn net.Conn) {
-	// close the connection after this function executes
-	defer conn.Close()	
-
 	// get message of at maximum 512 bytes
 	var buf [512]byte
 	for {
@@ -75,6 +86,13 @@ func handleTCPClient(conn net.Conn) {
 
 		// convert message to string
 		message := string(buf[0:])
+
+		// check if the connection must be closed after this message
+		if !persist(message){
+			// close the connection after this function executes
+			defer conn.Close()	
+			defer fmt.Println("closing connection")
+		}
 
 		// compose reponse to message
 		response := composeResponse(message)
@@ -228,10 +246,11 @@ func composeResponse(message string) *ResponseMessage{
 		return response
 }
 
-func decomposeRequest(request string) (string, string, string, []string, string){
+func decomposeRequest(request string) (string, string, string, map[string]string, string){
 		const sp = "\x20"
 		const cr = "\x0d"
 		const lf = "\x0a"
+		headers := make(map[string]string)
 
 		temp := strings.Split(request, cr + lf)
 		// get the request line for further processing
@@ -245,6 +264,10 @@ func decomposeRequest(request string) (string, string, string, []string, string)
 			}
 		}
 		headerLines := temp[1:i]
+		for _, value := range headerLines {
+			line := strings.Split(value, sp)
+			headers[line[0]] = headers[line[1]]
+		}
 		//check if there is any content in the body
 		var bodyLines []string
 		if i  < len(temp) {
@@ -259,7 +282,7 @@ func decomposeRequest(request string) (string, string, string, []string, string)
 		url := requests[1]
 		version := requests[2]
 
-		return method, url, version, headerLines, body
+		return method, url, version, headers, body
 
 }
 
