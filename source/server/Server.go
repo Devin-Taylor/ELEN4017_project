@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 	"io/ioutil"
-	"log"
 )
 
 const httpVersion = "HTTP/1.1"
@@ -16,27 +15,53 @@ func main() {
 	service := ":1235"
 
 	listener, err := net.Listen("tcp", service)
-	//packetConn, err := net.ListenPacket("udp", service)
+	checkError(err)
+	packetConn, err := net.ListenPacket("udp", service)
 	checkError(err)
 
 	for {
+		// make a new socket for any TCP connection that is accepted
 		conn, err := listener.Accept()
 		if err != nil {
 			continue
 		}
-		go  handleClient(conn)
-		//go handlePacketConn(packetConn)
+		// handle the TCP connection
+		go  handleTCPClient(conn)
+
+		// handle any UDP connection
+		handleUDPClient(packetConn)
+	}
+}
+
+func handleUDPClient(conn net.PacketConn) {
+	// get message of at maximum 512 bytes
+	var buf [512]byte	
+	for {
+		// read input and get address of sender
+		_, addr, err := conn.ReadFrom(buf[0:])
+		// if there was an error exit
+		if err != nil {
+			return
+		}
+
+		// convert message to string
+		message := string(buf[0:])
+
+		// compose reponse to message
+		response := composeResponse(message)
+
+		// write the response to the socket and send to the correct address
+		_, err2 := conn.WriteTo(response.ToBytes(), addr)
+		if err2 != nil {
+			return
+		}
 	}
 }
 
 
-func handleClient(conn net.Conn) {
+func handleTCPClient(conn net.Conn) {
 	// close the connection after this function executes
-	defer conn.Close()
-
-	// load the map describing location changes
-	locationMap := loadMovesMap()
-	//fmt.Println(locationMap["test/index.html"])
+	defer conn.Close()	
 
 	// get message of at maximum 512 bytes
 	var buf [512]byte
@@ -47,10 +72,27 @@ func handleClient(conn net.Conn) {
 		if err != nil {
 			return
 		}
-		// convert message to string and decompose it
+
+		// convert message to string
 		message := string(buf[0:])
 
-		method, url, version, _, body := decomposeRequest(message)
+		// compose reponse to message
+		response := composeResponse(message)
+
+		// write the response to the socket
+		_, err2 := conn.Write(response.ToBytes())
+		if err2 != nil {
+			return
+		}
+	}
+}
+
+func composeResponse(message string) *ResponseMessage{
+		// load the map describing location changes
+		locationMap := loadMovesMap()
+
+		// decompose message
+		method, url, version, _, body := decomposeRequest(message) // maybe move this out of function
 
 		composeResponse := true
 		var response = NewResponseMessage()
@@ -97,13 +139,13 @@ func handleClient(conn net.Conn) {
 				case "GET":
 					fmt.Println("200")
 					// compose 200
-                                        response.statusCode = "200"
+                    response.statusCode = "200"
 					response.phrase = "OK"
 
 					// load html file
 					file, err := os.Open(path + url)
 					if err != nil {
-						log.Fatal(err)
+						//need to figure out how to handle this
 					}
 					defer file.Close()
 					// read from file and convert to string
@@ -118,7 +160,7 @@ func handleClient(conn net.Conn) {
 				case "HEAD":
 					fmt.Println("200")
 					// compose 200
-                                        response.statusCode = "200"
+                    response.statusCode = "200"
 					response.phrase = "OK"
 
 					// set flag
@@ -127,7 +169,7 @@ func handleClient(conn net.Conn) {
 				case "PUT":
 					fmt.Println("200")
 					// compose 200
-                                        response.statusCode = "200"
+                    response.statusCode = "200"
 					response.phrase = "OK"
 
 					// convert the html to bytes and write to file
@@ -158,7 +200,7 @@ func handleClient(conn net.Conn) {
 				case "POST":
 					fmt.Println("200")
 					// compose 200
-                                        response.statusCode = "200"
+                    response.statusCode = "200"
 					response.phrase = "OK"
 
 					// write to file
@@ -182,13 +224,8 @@ func handleClient(conn net.Conn) {
 
 			}
 		}
-		//fmt.Println(method)
-		//fmt.Println(version)
-		_, err2 := conn.Write(response.ToBytes())
-		if err2 != nil {
-			return
-		}
-	}
+
+		return response
 }
 
 func decomposeRequest(request string) (string, string, string, []string, string){
@@ -228,8 +265,7 @@ func decomposeRequest(request string) (string, string, string, []string, string)
 
 func checkError(err error) {
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Fatal error: %s", err.Error())
-		os.Exit(1)
+		fmt.Fprintf(os.Stderr, "Error: %s", err.Error())
 	}
 }
 
@@ -242,10 +278,12 @@ func fileExists(path string) (bool, error) {
 
 func loadMovesMap() map[string]string {
 	const mapLocation = "../../config/moved_objects.txt"
+	locationMap := make(map[string]string)
 
 	file, err := os.Open(mapLocation)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Fprintf(os.Stderr, "Error: %s", err.Error())
+		return locationMap
 	}
 	defer file.Close()
 
@@ -254,28 +292,12 @@ func loadMovesMap() map[string]string {
 
 	lines :=  strings.Split(mapping, "\n")
 	lines = lines[0:len(lines)-1]
-	locationMap := make(map[string]string)
 
 	for _, value := range lines {
 		locations := strings.Split(value, "\x20")
-		//fmt.Println(locations)
+
 		locationMap[locations[0]] = locations[1]
 	}
 
 	return locationMap
 }
-
-/*func handlePacketConn(conn net.PacketConn) {
-	var buf [512]byte
-	for {
-		n, addr, err := conn.ReadFrom(buf[0:])
-		if err != nil {
-			return
-		}
-		fmt.Println(string(buf[0:]))
-		_, err2 := conn.WriteTo(buf[0:n], addr)
-		if err2 != nil {
-			return
-		}
-	}
-}*/
