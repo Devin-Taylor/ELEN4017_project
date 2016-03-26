@@ -8,6 +8,7 @@ import (
 	// "bufio"
 	"io/ioutil"
 	"strings"
+	"regexp"
 )
 
 func main() {
@@ -49,7 +50,7 @@ func main() {
 	_, err = conn.Write([]byte(request.toBytes()))
 	checkError(err)
 	// call to handle server response
-	handleServer(conn, method)
+	handleServer(conn, method, config)
 
 	os.Exit(0)
 }
@@ -101,12 +102,12 @@ func getUserInputs() (string, string, string) {
     return method, url, entityBody
 }
 
-func handleServer(conn net.Conn, method string) {
+func handleServer(conn net.Conn, method string, config configSettings) {
 	// close the connection after this function executes
 	defer conn.Close()
 
 	// get message of at maximum 512 bytes
-	var buf [512]byte
+	var buf [8192]byte
 	// read input 
 	_, err := conn.Read(buf[0:])
 	// if there was an error exit
@@ -118,10 +119,118 @@ func handleServer(conn net.Conn, method string) {
 	// if status = 200 then can be from multiple different requests
 
 	printToConsole(version, code, status, headerLines, body)
+
+	regexpString := "src=\"(.*?)\""
 	
 	if method != "HEAD" {
-		launchPage(body)
+		isSource := checkForSources(body)
+
+		if isSource {
+			Loop:
+				sourceMap := retrieveSources(body, regexpString)
+
+				for key, value := range sourceMap {
+
+					request := NewRequestMessage()
+					// set header information
+					request.setHeaders(key, config.connection, "Mozilla/5.0", "en")
+					conn, err := net.Dial(config.protocol, key+":80")
+					checkError(err)
+					// set request version as need to when launch 505 error later on
+					requestVersion := "HTTP/1.1"
+					// set request line information
+					request.setRequestLine("GET", value, requestVersion)
+					// set entity body
+					request.setEntityBody("")
+					// write request information to the server
+					_, err = conn.Write([]byte(request.toBytes()))
+					checkError(err)
+					// call to handle server response
+
+					StopIndex := strings.LastIndex(value, "/")
+					fileName := value[StopIndex:len(value)]
+
+					var twoHundred bool
+
+					twoHundred, body = handlerServerSources(conn, "GET", fileName)
+
+					if !twoHundred {
+						regexpString = "href=\"(.*?)\""
+						goto Loop
+					} else {
+						cmd := exec.Command("xdg-open", "../../temp/"+fileName)
+						err = cmd.Start()
+						checkError(err)
+					}
+
+				}
+		}
+
+		// launchPage(body)
 	}
+}
+
+func handlerServerSources(conn net.Conn, method string, fileName string) (bool, string) {
+	// close the connection after this function executes
+	defer conn.Close()
+
+	// get message of at maximum 512 bytes
+	var buf [8192]byte
+	// read input 
+	_, err := conn.Read(buf[0:])
+	// if there was an error exit
+	checkError(err)
+	// convert message to string and decompose it
+	response := string(buf[0:])
+
+	version, code, status, headerLines, body := decomposeResponse(response)
+	// if status = 200 then can be from multiple different requests
+
+	printToConsole(version, code, status, headerLines, body)
+
+	if code == "301" || code == "302" {
+		return false, body
+	}
+
+	err = ioutil.WriteFile("../../temp" + fileName, []byte(body), 0644)
+	checkError(err)
+
+	return true, ""
+}
+
+func checkForSources(body string) bool {
+	return strings.Contains(body, "src=\"")
+}
+
+func retrieveSources(body string, regexpString string) map[string]string {
+
+	fmt.Println(body)
+
+	reg := regexp.MustCompile(regexpString)
+	allMatches := reg.FindAllStringIndex(body, -1)
+	var splitString string
+
+	var sourceStrings []string
+
+	urlToFileMap := make(map[string]string)
+
+	for _, value := range allMatches {
+		sourceStrings = append(sourceStrings, body[value[0]:value[1]])
+	}
+
+	if regexpString == "src=\"(.*?)\"" {
+		splitString = "src=\"http://"
+	} else {
+		splitString = "href=\"http://"
+	}
+
+	for _, value := range sourceStrings {
+		withoutHttp := strings.Split(value, splitString)
+		splitURL := strings.SplitAfterN(withoutHttp[1], "/", 2)
+		urlToFileMap[strings.Replace(splitURL[0], "/", "", 2)] = "/" + strings.Replace(splitURL[1], "\"", "", 2)
+	}
+
+	return urlToFileMap
 }
 
 func printToConsole(version string, code string, status string, headerLines []string, body string) {
