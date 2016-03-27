@@ -132,13 +132,17 @@ func handleServer(conn net.Conn, method string, config configSettings) {
 		if isSource {
 			// Loop:
 			sourceMap := retrieveSources(body, regexpString)
-
+			fmt.Println(sourceMap)
 			for key, value := range sourceMap {
 
 				request := NewRequestMessage()
 				// set header information
 				request.setHeaders(key, config.connection, "Mozilla/5.0", "en")
-				conn, err := net.Dial(config.protocol, key+":80")
+				port := ":80"
+				if key == "localhost" {
+					port = ":1235"
+				}
+				conn, err := net.Dial(config.protocol, key+port)
 				checkError(err)
 				// set request version as need to when launch 505 error later on
 				requestVersion := "HTTP/1.1"
@@ -204,7 +208,11 @@ func handlerServerSources(conn net.Conn, method string, fileName string) {
 		request := NewRequestMessage()
 		// set header information
 		request.setHeaders(key, "tcp", "Mozilla/5.0", "en")
-		conn2, err := net.Dial("tcp", key+":80")
+		port := ":80"
+		if key == "localhost" {
+			port = ":1235"
+		}
+		conn2, err := net.Dial("tcp", key+port)
 		checkError(err)
 		defer conn2.Close()
 		// set request version as need to when launch 505 error later on
@@ -244,9 +252,9 @@ func handlerServerSources(conn net.Conn, method string, fileName string) {
 		var img, _, _ = image.Decode(bytes.NewReader(data))
 
 		// img, _ := jpeg.Decode(bytes.NewReader([]byte(body)))
-		fmt.Println("******************")
-		fmt.Println(img)
-		fmt.Println("******************")
+		// fmt.Println("******************")
+		// fmt.Println([]byte(body))
+		// fmt.Println("******************")
 		out,_ := os.Create("../../temp/"+fileName)
 		err = jpeg.Encode(out, img, nil)
 
