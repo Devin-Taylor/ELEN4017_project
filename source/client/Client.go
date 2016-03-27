@@ -30,28 +30,16 @@ func main() {
 		connectionType := os.Args[2]
 		checkInput(config, service, connectionType)
 	}
-	// initialize request message struct
-	request := NewRequestMessage()
-	// set header information
-	request.setHeaders(service, config.connection, "Mozilla/5.0", "en")
 	// check if proxy is required
 	if strings.ToUpper(config.proxy) == "ON" {
 		service = promptProxy()
 	}
 	// get the user to input the method to be used as well as the file/url requested
 	method, url, entityBody := getUserInputs()
-	// create connection
-	conn, err := net.Dial(config.protocol, service)
-	checkError(err)
-	// set request version as need to when launch 505 error later on
-	requestVersion := "HTTP/1.1"
-	// set request line information
-	request.setRequestLine(method, url, requestVersion)
-	// set entity body
-	request.setEntityBody(entityBody)
-	// write request information to the server
-	_, err = conn.Write([]byte(request.toBytes()))
-	checkError(err)
+	// set request message
+	request := setRequestMessage(service, config, method, url, entityBody)
+	// connect and write to server
+	conn := dialAndSend(config.protocol, service, request)
 	// call to handle server response
 	handleServer(conn, method, config)
 
@@ -64,6 +52,16 @@ func checkError(err error) {
 		os.Exit(1)
 	}
 }
+
+func dialAndSend(protocol string, service string, request *RequestMessage) net.Conn {
+	conn, err := net.Dial(protocol, service)
+	checkError(err)
+	_, err = conn.Write([]byte(request.toBytes()))
+	checkError(err)
+
+	return conn
+}
+
 
 func checkInput(config configSettings, service string, connectionType string) {
 	switch service {
@@ -109,7 +107,7 @@ func handleServer(conn net.Conn, method string, config configSettings) {
 	// close the connection after this function executes
 	defer conn.Close()
 
-	// get message of at maximum 512 bytes
+	// get message
 	var buf [8192]byte
 	// read input 
 	_, err := conn.Read(buf[0:])
@@ -118,57 +116,30 @@ func handleServer(conn net.Conn, method string, config configSettings) {
 	// convert message to string and decompose it
 	response := string(buf[0:])
 
-	version, code, status, _, body, headerLines := decomposeResponse(response)
+	version, code, status, headers, body := decomposeResponse(response)
 	// if status = 200 then can be from multiple different requests
 
-	printToConsole(version, code, status, headerLines, body)
-
-	regexpString := "src=\"(.*?)\""
+	printToConsole(version, code, status, headers, body)
 	
 	if method != "HEAD" {
 
-		isSource := checkForSources(body)
+		if checkForSources(body) {
+			sourceMap := retrieveSources(body)
 
-		if isSource {
-			// Loop:
-			sourceMap := retrieveSources(body, regexpString)
 			for key, value := range sourceMap {
+				// compile the request message
+				request := setRequestMessage(key, config, "GET", value, "")
 
-				request := NewRequestMessage()
-				// set header information
-				request.setHeaders(key, config.connection, "Mozilla/5.0", "en")
 				port := ":80"
 				if key == "localhost" {
 					port = ":1235"
 				}
-				conn, err := net.Dial(config.protocol, key+port)
-				checkError(err)
-				// set request version as need to when launch 505 error later on
-				requestVersion := "HTTP/1.1"
-				// set request line information
-				request.setRequestLine("GET", value, requestVersion)
-				// set entity body
-				request.setEntityBody("")
-				// write request information to the server
-				_, err = conn.Write([]byte(request.toBytes()))
-				checkError(err)
-				// call to handle server response
 
-				StopIndex := strings.LastIndex(value, "/")
-				fileName := value[StopIndex:len(value)]
+				conn := dialAndSend(config.protocol, key+port, request)
 
-				// var twoHundred bool
+				fileName := getFileName(value)
 
-				/*twoHundred, body =*/ handlerServerSources(conn, "GET", fileName)
-
-				// if !twoHundred {
-				// 	regexpString = "href=\"(.*?)\""
-				// 	goto Loop
-				// } else {
-				// 	cmd := exec.Command("xdg-open", "../../temp/"+fileName)
-				// 	err = cmd.Start()
-				// 	checkError(err)
-				// }
+				handlerServerSources(conn, "GET", fileName, config)
 			}
 		}
 
@@ -176,7 +147,14 @@ func handleServer(conn net.Conn, method string, config configSettings) {
 	}
 }
 
-func handlerServerSources(conn net.Conn, method string, fileName string) {
+func getFileName(value string) string {
+	StopIndex := strings.LastIndex(value, "/")
+	fileName := value[StopIndex:len(value)]
+
+	return fileName
+}
+
+func handlerServerSources(conn net.Conn, method string, fileName string, config configSettings) {
 	// close the connection after this function executes
 	defer conn.Close()
 
@@ -189,12 +167,17 @@ func handlerServerSources(conn net.Conn, method string, fileName string) {
 	// convert message to string and decompose it
 	response := string(buf[0:])
 
-	version, code, status, headers, body, headerLines := decomposeResponse(response)
+	version, code, status, headers, body := decomposeResponse(response)
 	// if status = 200 then can be from multiple different requests
 
-	printToConsole(version, code, status, headerLines, body)
+	printToConsole(version, code, status, headers, body)
 
-	if code == "301" || code == "302" {
+	for code != "200" {
+
+		if strings.Split(code, "")[0] != "3" {
+			break
+		}
+
 		httpUrl := headers["Location:"]
 
 		httpUrl = strings.Split(httpUrl, "//")[1]
@@ -204,29 +187,19 @@ func handlerServerSources(conn net.Conn, method string, fileName string) {
 		key := strings.Replace(splitURL[0], "/", "", 2)
 		value := "/" + splitURL[1]
 
-		request := NewRequestMessage()
-		// set header information
-		request.setHeaders(key, "tcp", "Mozilla/5.0", "en")
+		// compile the request message
+		request := setRequestMessage(key, config, "GET", value, "")
+
 		port := ":80"
 		if key == "localhost" {
 			port = ":1235"
 		}
-		conn2, err := net.Dial("tcp", key+port)
-		checkError(err)
-		defer conn2.Close()
-		// set request version as need to when launch 505 error later on
-		requestVersion := "HTTP/1.1"
-		// set request line information
-		request.setRequestLine("GET", value, requestVersion)
-		// set entity body
-		request.setEntityBody("")
-		// write request information to the server
-		_, err = conn2.Write([]byte(request.toBytes()))
-		checkError(err)
-		// call to handle server response
 
-		StopIndex := strings.LastIndex(value, "/")
-		fileName = value[StopIndex:len(value)]
+		conn2 := dialAndSend(config.protocol, key+port, request)
+
+		defer conn2.Close()
+
+		fileName = getFileName(value)
 
 		var buf [2048]byte
 		// read input 
@@ -236,39 +209,31 @@ func handlerServerSources(conn net.Conn, method string, fileName string) {
 		// convert message to string and decompose it
 		response := string(buf[0:])
 
-		version, code, status, _, body, headerLines = decomposeResponse(response)
+		version, code, status, headers, body = decomposeResponse(response)
 		// if status = 200 then can be from multiple different requests
 
-		printToConsole(version, code, status, headerLines, body)
-
-		// 	cmd := exec.Command("xdg-open", "../../temp/"+fileName)
-				// 	err = cmd.Start()
-				// 	checkError(err)
+		printToConsole(version, code, status, headers, body)
 	}
 
-	if code != "301" {
-		img, _, _ := image.Decode(bytes.NewReader([]byte(body)))
-		out,_ := os.Create("../../temp"+fileName)
-		err = jpeg.Encode(out, img, nil)
+	img, _, _ := image.Decode(bytes.NewReader([]byte(body)))
+	out,_ := os.Create("../../temp"+fileName)
+	err = jpeg.Encode(out, img, nil)
 
-		// err = ioutil.WriteFile("../../temp" + fileName, []byte(body), 0644)
-		// checkError(err)
+	cmd := exec.Command("xdg-open", "../../temp/"+fileName)
+	err = cmd.Start()
+	checkError(err)
 
-		cmd := exec.Command("xdg-open", "../../temp/"+fileName)
-		err = cmd.Start()
-		checkError(err)
-	}
 }
 
 func checkForSources(body string) bool {
 	return strings.Contains(body, "src=\"")
 }
 
-func retrieveSources(body string, regexpString string) map[string]string {
+func retrieveSources(body string) map[string]string {
 
-	reg := regexp.MustCompile(regexpString)
+	reg := regexp.MustCompile("src=\"(.*?)\"")
 	allMatches := reg.FindAllStringIndex(body, -1)
-	var splitString string
+	// var splitString string
 
 	var sourceStrings []string
 
@@ -278,14 +243,14 @@ func retrieveSources(body string, regexpString string) map[string]string {
 		sourceStrings = append(sourceStrings, body[value[0]:value[1]])
 	}
 
-	if regexpString == "src=\"(.*?)\"" {
-		splitString = "src=\"http://"
-	} else {
-		splitString = "href=\"http://"
-	}
+	// if regexpString == "src=\"(.*?)\"" {
+	// 	splitString = "src=\"http://"
+	// } else {
+	// 	splitString = "href=\"http://"
+	// }
 
 	for _, value := range sourceStrings {
-		withoutHttp := strings.Split(value, splitString)
+		withoutHttp := strings.Split(value, "src=\"http://")
 		splitURL := strings.SplitAfterN(withoutHttp[1], "/", 2)
 		urlToFileMap[strings.Replace(splitURL[0], "/", "", 2)] = "/" + strings.Replace(splitURL[1], "\"", "", 2)
 	}
@@ -293,19 +258,19 @@ func retrieveSources(body string, regexpString string) map[string]string {
 	return urlToFileMap
 }
 
-func printToConsole(version string, code string, status string, headerLines []string, body string) {
+func printToConsole(version string, code string, status string, headerLines map[string]string, body string) {
 
 	var allHeaders string
 
-	for _, value := range headerLines {
-		allHeaders = allHeaders + value + "\n"
+	for key, value := range headerLines {
+		allHeaders = allHeaders + key + " " + value + "\n"
 	}
 
 	content := version + " " + code + " " + status + "\n" + allHeaders + "\n\n" + body
 	fmt.Println(content) 
 }
 
-func decomposeResponse(response string) (string, string, string, map[string]string, string, []string){
+func decomposeResponse(response string) (string, string, string, map[string]string, string){
 		const sp = "\x20"
 		const cr = "\x0d"
 		const lf = "\x0a"
@@ -341,7 +306,7 @@ func decomposeResponse(response string) (string, string, string, map[string]stri
 		code := responses[1]
 		version := responses[0]
 
-		return version, code, status, headers, body, headerLines
+		return version, code, status, headers, body
 
 }
 

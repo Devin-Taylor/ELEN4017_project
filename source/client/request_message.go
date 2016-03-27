@@ -51,3 +51,13 @@ func (rm *RequestMessage) setRequestLine(method string, url string, version stri
 func (rm *RequestMessage) setEntityBody(body string) {
 	rm.entityBody = body
 }
+
+func setRequestMessage(service string, config configSettings, method string, url string, body string) *RequestMessage {
+	request := NewRequestMessage()
+
+	request.setHeaders(service, config.connection, "Mozilla/5.0", "en")
+	request.setRequestLine(method, url, "HTTP/1.1")
+	request.setEntityBody(body)
+
+	return request
+}
