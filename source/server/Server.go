@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 	"io/ioutil"
-	//"time"
 )
 
 const httpVersion = "HTTP/1.1"
@@ -17,8 +16,8 @@ func main() {
 
 	listener, err := net.Listen("tcp", service)
 	checkError(err)
-	//packetConn, err := net.ListenPacket("udp", service)
-	//checkError(err)
+	packetConn, err := net.ListenPacket("udp", service)
+	checkError(err)
 
 	for {
 		// make a new socket for any TCP connection that is accepted
@@ -31,7 +30,7 @@ func main() {
 		go  handleTCPClient(conn)
 
 		// handle any UDP connection
-		//handleUDPClient(packetConn)
+		handleUDPClient(packetConn)
 	}
 }
 
@@ -63,9 +62,8 @@ func handleUDPClient(conn net.PacketConn) {
 func persist(message string) bool {
 	// get headers
 	_, _, _, headers, _ := decomposeRequest(message)
-	fmt.Println(headers["Connection:"])
 	switch (headers["Connection:"]) {
-		case "keep-alive":			
+		case "keep-alive":
 			return true
 		case "close":
 			return false
@@ -76,8 +74,7 @@ func persist(message string) bool {
 
 
 func handleTCPClient(conn net.Conn) {
-	defer conn.Close()
-
+	// get message of at maximum 512 bytes
 	var buf [512]byte
 	for {
 		// read input 
@@ -86,56 +83,26 @@ func handleTCPClient(conn net.Conn) {
 		if err != nil {
 			return
 		}
+
 		// convert message to string
-			message := string(buf[0:])		
+		message := string(buf[0:])
+
+		// check if the connection must be closed after this message
+		if !persist(message){
+			// close the connection after this function executes
+			defer conn.Close()	
+			defer fmt.Println("closing connection")
+		}
 
 		// compose reponse to message
 		response := composeResponse(message)
+
 		// write the response to the socket
 		_, err2 := conn.Write(response.ToBytes())
 		if err2 != nil {
 			return
 		}
 	}
-
-	/*defer conn.Close()	
-	//defer fmt.Println("closing connection")
-	// get message of at maximum 512 bytes
-	var buf [512]byte
-	for {
-		// read input 
-		_, err := conn.Read(buf[0:])
-		//fmt.Println(n)
-		// if there was an error exit
-		if err != nil {
-			return
-		} else {
-			// convert message to string
-			message := string(buf[0:])		
-
-			// compose reponse to message
-			response := composeResponse(message)
-
-			// write the response to the socket
-			_, err2 := conn.Write(response.ToBytes())
-			if err2 != nil {
-				fmt.Println("error")
-			}
-
-			// check if the connection must be closed after this message
-			//_, _, _, headers, _ := decomposeRequest(message)
-			//fmt.Println(headers)
-			//fmt.Println(message)
-			if !persist(message){
-				// close the connection after this function executes
-				defer conn.Close()	
-				defer fmt.Println("closing connection")
-			} else {
-				//conn.SetKeepAlive(true)
-				//conn.SetReadDeadline(time.Time)
-			}
-		}		
-	}*/
 }
 
 func composeResponse(message string) *ResponseMessage{
@@ -166,7 +133,7 @@ func composeResponse(message string) *ResponseMessage{
 			// compose 301
 			response.statusCode = "301"
 			response.phrase = "Moved Permanently"
-			response.headerLines["Location:"] = locationMap[url]
+			response.headerLines["location:"] = locationMap[url]
 			response.entityBody = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n<title>301 Moved Permanently</title>\n</head>\n<body>\n<h1>Moved Permanently</h1>\n<p>The document has moved <a href=\"" + url + "\">here</a>.</p>\n</body>\n</html>"
 			// set flag
 			composeResponse = false
@@ -298,10 +265,8 @@ func decomposeRequest(request string) (string, string, string, map[string]string
 		}
 		headerLines := temp[1:i]
 		for _, value := range headerLines {
-			//fmt.Println(value)
-			line := strings.Split(value, " ")
-			//fmt.Println("0: " + line[0] + " 1: " + line[1])
-			headers[line[0]] = line[1]
+			line := strings.Split(value, sp)
+			headers[line[0]] = headers[line[1]]
 		}
 		//check if there is any content in the body
 		var bodyLines []string

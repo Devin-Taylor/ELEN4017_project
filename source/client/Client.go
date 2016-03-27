@@ -142,6 +142,8 @@ func handleServer(conn net.Conn, method string, config configSettings) {
 				if key == "localhost" {
 					port = ":1235"
 				}
+
+				fmt.Println(key+port)
 				conn, err := net.Dial(config.protocol, key+port)
 				checkError(err)
 				// set request version as need to when launch 505 error later on
@@ -182,7 +184,7 @@ func handlerServerSources(conn net.Conn, method string, fileName string) {
 	defer conn.Close()
 
 	// get message of at maximum 512 bytes
-	var buf [8192]byte
+	var buf [2998]byte
 	// read input 
 	_, err := conn.Read(buf[0:])
 	// if there was an error exit
@@ -193,7 +195,7 @@ func handlerServerSources(conn net.Conn, method string, fileName string) {
 	version, code, status, headers, body, headerLines := decomposeResponse(response)
 	// if status = 200 then can be from multiple different requests
 
-	printToConsole(version, code, status, headerLines, body)
+	// printToConsole(version, code, status, headerLines, body)
 
 	if code == "301" || code == "302" {
 		httpUrl := headers["Location:"]
@@ -229,7 +231,7 @@ func handlerServerSources(conn net.Conn, method string, fileName string) {
 		StopIndex := strings.LastIndex(value, "/")
 		fileName = value[StopIndex:len(value)]
 
-		var buf [2*65136]byte
+		var buf [2048]byte
 		// read input 
 		_, err = conn2.Read(buf[0:])
 		// if there was an error exit
@@ -248,14 +250,13 @@ func handlerServerSources(conn net.Conn, method string, fileName string) {
 	}
 
 	if code != "301" {
-		data := []byte("JPEG89a000\x0000000\x00\x00\x00\x000\x000\x02\b\r0000000\x00")
-		var img, _, _ = image.Decode(bytes.NewReader(data))
+		img, _, _ := image.Decode(bytes.NewReader([]byte(body)))
 
 		// img, _ := jpeg.Decode(bytes.NewReader([]byte(body)))
-		// fmt.Println("******************")
-		// fmt.Println([]byte(body))
-		// fmt.Println("******************")
-		out,_ := os.Create("../../temp/"+fileName)
+		fmt.Println("******************")
+		fmt.Println([]byte(body))
+		fmt.Println("******************")
+		out,_ := os.Create("../../temp"+fileName)
 		err = jpeg.Encode(out, img, nil)
 
 		// err = ioutil.WriteFile("../../temp" + fileName, []byte(body), 0644)
@@ -338,7 +339,7 @@ func decomposeResponse(response string) (string, string, string, map[string]stri
 		var bodyLines []string
 		if i  < len(temp) {
 			// get the body content
-			bodyLines = temp[i:len(temp)]
+			bodyLines = temp[i+1:len(temp)]
 		}
 		body := strings.Join(bodyLines, cr + lf)
 
