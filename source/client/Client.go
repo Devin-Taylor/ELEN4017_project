@@ -132,7 +132,6 @@ func handleServer(conn net.Conn, method string, config configSettings) {
 		if isSource {
 			// Loop:
 			sourceMap := retrieveSources(body, regexpString)
-			fmt.Println(sourceMap)
 			for key, value := range sourceMap {
 
 				request := NewRequestMessage()
@@ -142,8 +141,6 @@ func handleServer(conn net.Conn, method string, config configSettings) {
 				if key == "localhost" {
 					port = ":1235"
 				}
-
-				fmt.Println(key+port)
 				conn, err := net.Dial(config.protocol, key+port)
 				checkError(err)
 				// set request version as need to when launch 505 error later on
@@ -195,7 +192,7 @@ func handlerServerSources(conn net.Conn, method string, fileName string) {
 	version, code, status, headers, body, headerLines := decomposeResponse(response)
 	// if status = 200 then can be from multiple different requests
 
-	// printToConsole(version, code, status, headerLines, body)
+	printToConsole(version, code, status, headerLines, body)
 
 	if code == "301" || code == "302" {
 		httpUrl := headers["Location:"]
@@ -251,11 +248,6 @@ func handlerServerSources(conn net.Conn, method string, fileName string) {
 
 	if code != "301" {
 		img, _, _ := image.Decode(bytes.NewReader([]byte(body)))
-
-		// img, _ := jpeg.Decode(bytes.NewReader([]byte(body)))
-		fmt.Println("******************")
-		fmt.Println([]byte(body))
-		fmt.Println("******************")
 		out,_ := os.Create("../../temp"+fileName)
 		err = jpeg.Encode(out, img, nil)
 
