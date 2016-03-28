@@ -212,7 +212,7 @@ func handlerServerSources(conn net.Conn, method string, fileName string, config 
 
 		fileName = getFileName(value)
 
-		var buf [2048]byte
+		var buf [8192]byte
 		// read input 
 		_, err = conn2.Read(buf[0:])
 		// if there was an error exit

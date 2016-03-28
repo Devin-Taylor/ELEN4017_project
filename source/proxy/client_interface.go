@@ -63,7 +63,7 @@ func handleClient(conn net.Conn, channel chan [3]string) {
 	// get the host ID
 	host := mapRequest(url, headers, channel, conn.RemoteAddr().String(), method)
 
-	isInCache, lastModified, locationMap := checkInCache(url)
+	isInCache, lastModified, locationMap := checkInCache(url, strings.Split(host, ":")[0])
 
 	if isInCache {
 		headers = modifyHeaders(lastModified, headers)
@@ -91,6 +91,8 @@ func handleClient(conn net.Conn, channel chan [3]string) {
 func getNewResponse(serverResponse string, host string, url string) (bool, *ResponseMessage, string) {
 	version, code, status, headers, body := decomposeResponse(serverResponse)
 
+	fmt.Println(code)
+
 	if code == "304" {
 		file, _ := os.Open("../../cache/"+host+url)
 		defer file.Close()
@@ -110,10 +112,9 @@ func getNewResponse(serverResponse string, host string, url string) (bool, *Resp
 
 	if code == "200" {
 
-		os.Mkdir("../../cache/"+host, 0644)
+		os.Mkdir("../../cache/"+host, 0777)
 
-		err := ioutil.WriteFile("../../cache/"+host+url, []byte(body), 0644)
-		fmt.Println(err)
+		ioutil.WriteFile("../../cache/"+host+url, []byte(body), 0777)
 
 		var response = NewResponseMessage()
 		response.version = version
@@ -121,8 +122,7 @@ func getNewResponse(serverResponse string, host string, url string) (bool, *Resp
 		response.statusCode = "200"
 		response.phrase = "OK"
 		response.entityBody = body
-		newTime := headers["Last-Modified"]
-
+		newTime := headers["Last-Modified::"]
 		return true, response, newTime
 	}
 
@@ -136,10 +136,10 @@ func getNewResponse(serverResponse string, host string, url string) (bool, *Resp
 	return false, response, ""
 }
 
-func checkInCache(url string) (bool, string, map[string]string) {
+func checkInCache(url string, host string) (bool, string, map[string]string) {
 	locationMap := loadMap("../../cache/cache_map.txt")
 
-	lastModified := locationMap[url]
+	lastModified := locationMap[host+url]
 
 	if lastModified != "" {
 		return true, lastModified, locationMap
@@ -148,7 +148,7 @@ func checkInCache(url string) (bool, string, map[string]string) {
 }
 
 func modifyHeaders(lastModified string, headers map[string]string) map[string]string {
-	headers["If-Modified-Since"] = lastModified
+	headers["If-Modified-Since:"] = lastModified
 
 	return headers
 }
@@ -162,7 +162,7 @@ func compileNewRequest(method string, url string, version string, headers map[st
 	requestString += version + cr + lf
 	//add header lines
 	for headerFieldName, value := range headers {
-		requestString += headerFieldName + ":" + sp
+		requestString += headerFieldName + sp
 		requestString += value + cr + lf
 	}
 	requestString += cr + lf
@@ -211,7 +211,7 @@ func decomposeRequest(request string) (string, string, string, map[string]string
 		headerLines := temp[1:i]
 		for _, value := range headerLines {
 			//fmt.Println(value)
-			line := strings.Split(value, " ")
+			line := strings.SplitN(value, " ", 2)
 			//fmt.Println("0: " + line[0] + " 1: " + line[1])
 			headers[line[0]] = line[1]
 		}
@@ -273,7 +273,7 @@ func decomposeResponse(response string) (string, string, string, map[string]stri
 		}
 		headerLines := temp[1:i]
 		for _, value := range headerLines {
-			line := strings.Split(value, sp)
+			line := strings.SplitN(value, sp, 2)
 			headers[line[0]] = line[1]
 		}
 		//check if there is any content in the body

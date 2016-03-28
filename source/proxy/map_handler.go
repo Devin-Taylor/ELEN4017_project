@@ -24,7 +24,7 @@ func loadMap(mapLocation string) map[string]string {
 	lines = lines[0:len(lines)-1]
 
 	for _, value := range lines {
-		locations := strings.Split(value, "\x20")
+		locations := strings.SplitN(value, "\x20", 2)
 
 		locationMap[locations[0]] = locations[1]
 	}
