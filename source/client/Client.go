@@ -30,14 +30,14 @@ func main() {
 		connectionType := os.Args[2]
 		checkInput(config, service, connectionType)
 	}
-	// check if proxy is required
-	if strings.ToUpper(config.proxy) == "ON" {
-		service = promptProxy()
-	}
 	// get the user to input the method to be used as well as the file/url requested
 	method, url, entityBody := getUserInputs()
 	// set request message
 	request := setRequestMessage(service, config, method, url, entityBody)
+	// check if proxy is required
+	if strings.ToUpper(config.proxy) == "ON" {
+		service = promptProxy()
+	}
 	// connect and write to server
 	conn := dialAndSend(config.protocol, service, request)
 	// call to handle server response
@@ -128,21 +128,25 @@ func handleServer(conn net.Conn, method string, config configSettings) {
 
 			for key, value := range sourceMap {
 				// compile the request message
-				request := setRequestMessage(key, config, "GET", value, "")
 
-				port := ":80"
 				if key == "localhost" {
-					port = ":1235"
+					key = key + ":1235"
 				}
 
+				request := setRequestMessage(key, config, "GET", value, "")
+
+				service := conn.RemoteAddr().String()
+				// port := ":80"
+				// if key == "localhost" {
+				// 	port = ":1235"
+				// }
+
 				if ip,_ := net.ResolveIPAddr("ip", key); ip.String() != strings.Split(conn.LocalAddr().String(),":")[0] || strings.ToUpper(config.connection) != "KEEP-ALIVE" {
-					
-					conn = dialAndSend(config.protocol, key+port, request)
+					conn = dialAndSend(config.protocol, service, request)
 				} else {
 					_, err = conn.Write([]byte(request.toBytes()))
 					checkError(err)
 				}
-
 				fileName := getFileName(value)
 
 				handlerServerSources(conn, "GET", fileName, config)
@@ -195,12 +199,14 @@ func handlerServerSources(conn net.Conn, method string, fileName string, config 
 		// compile the request message
 		request := setRequestMessage(key, config, "GET", value, "")
 
-		port := ":80"
-		if key == "localhost" {
-			port = ":1235"
-		}
+		service := conn.RemoteAddr().String()
 
-		conn2 := dialAndSend(config.protocol, key+port, request)
+		// port := ":80"
+		// if key == "localhost" {
+		// 	port = ":1235"
+		// }
+
+		conn2 := dialAndSend(config.protocol, service, request)
 
 		defer conn2.Close()
 
