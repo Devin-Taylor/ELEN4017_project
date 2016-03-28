@@ -168,7 +168,7 @@ func handlerServerSources(conn net.Conn, method string, fileName string, config 
 	defer conn.Close()
 
 	// get message of at maximum 512 bytes
-	var buf [2998]byte
+	var buf [8192]byte
 	// read input 
 	_, err := conn.Read(buf[0:])
 	// if there was an error exit
@@ -300,7 +300,7 @@ func decomposeResponse(response string) (string, string, string, map[string]stri
 		}
 		headerLines := temp[1:i]
 		for _, value := range headerLines {
-			line := strings.Split(value, sp)
+			line := strings.SplitN(value, sp, 2)
 			headers[line[0]] = line[1]
 		}
 		//check if there is any content in the body
@@ -312,7 +312,7 @@ func decomposeResponse(response string) (string, string, string, map[string]stri
 		body := strings.Join(bodyLines, cr + lf)
 
 		// split the response line into it's components
-		responses := strings.Split(responseLine, sp)
+		responses := strings.SplitN(responseLine, sp, 3)
 		status := responses[2]
 		code := responses[1]
 		version := responses[0]

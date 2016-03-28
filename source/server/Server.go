@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"io/ioutil"
-	//"time"
+	"time"
 )
 
 const httpVersion = "HTTP/1.1"
@@ -78,21 +78,6 @@ func handleUDPClient(conn net.PacketConn) {
 	}
 }
 
-func persist(message string) bool {
-	// get headers
-	_, _, _, headers, _ := decomposeRequest(message)
-	fmt.Println(headers["Connection:"])
-	switch (headers["Connection:"]) {
-		case "keep-alive":			
-			return true
-		case "close":
-			return false
-		default:
-			return false
-	}
-}
-
-
 func handleTCPClient(conn net.Conn) {
 	defer conn.Close()
 	defer fmt.Println("closing connection for ", conn.RemoteAddr())
@@ -126,11 +111,16 @@ func composeResponse(message string) *ResponseMessage{
 		locationMap := loadMovesMap()
 
 		// decompose message
-		method, url, version, _, body := decomposeRequest(message) // maybe move this out of function
+		method, url, version, headers, body := decomposeRequest(message) // maybe move this out of function
 
 		composeResponse := true
 		var response = NewResponseMessage()
 		response.version = httpVersion
+
+		// set response headers		
+		response.headerLines["Server:"] = "FooBar"
+		response.headerLines["Date:"] = time.Now().Format(time.RFC1123Z)
+		response.headerLines["Content-Language:"] = "en"
 
 		// make sure that version is compatible with server otherwise send a 505 response
 		if version != httpVersion && composeResponse {
@@ -171,22 +161,46 @@ func composeResponse(message string) *ResponseMessage{
 		if composeResponse {
 			switch strings.ToUpper(method) {
 				case "GET":
-					fmt.Println("200")
-					// compose 200
-                    response.statusCode = "200"
-					response.phrase = "OK"
+					// get last modified time
+     				stat, err := os.Stat(path + url)
+     				if err != nil {
+        				fmt.Println(err)
+     				}
+     				modTime := stat.ModTime()
+     				t, _ := time.Parse(time.RFC1123Z, headers["If-Modified-Since"])
 
-					// load html file
-					file, err := os.Open(path + url)
-					if err != nil {
-						//need to figure out how to handle this
-					}
-					defer file.Close()
-					// read from file and convert to string
-					b, err := ioutil.ReadAll(file)
-					html := string(b)
+     				// check if modified time is after a last modified time
+     				if headers["If-Modified-Since"] == "" || modTime.Before(t) || modTime.Equal(t) {
+						fmt.Println("200")
+						// compose 200
+                    	response.statusCode = "200"
+						response.phrase = "OK"
 
-					response.entityBody = html
+						// load html file
+						file, err := os.Open(path + url)
+						if err != nil {
+							//need to figure out how to handle this
+						}
+						defer file.Close()
+						// read from file and convert to string
+						b, err := ioutil.ReadAll(file)
+						html := string(b)
+
+						response.entityBody = html					
+     				
+     					// add last modified header
+     					fmt.Println(modTime.Format(time.RFC1123Z))
+						response.headerLines["Last-Modified:"] = modTime.Format(time.RFC1123Z)
+     				} else {
+     					fmt.Println("304")
+						// compose 304
+                    	response.statusCode = "304"
+						response.phrase = "Not Modified"
+
+						response.entityBody = ""
+     				}
+
+					
 
 					// set flag
 					composeResponse = false
@@ -282,7 +296,7 @@ func decomposeRequest(request string) (string, string, string, map[string]string
 		headerLines := temp[1:i]
 		for _, value := range headerLines {
 			//fmt.Println(value)
-			line := strings.Split(value, " ")
+			line := strings.SplitN(value, " ", 2)
 			//fmt.Println("0: " + line[0] + " 1: " + line[1])
 			headers[line[0]] = line[1]
 		}
@@ -295,7 +309,7 @@ func decomposeRequest(request string) (string, string, string, map[string]string
 		body := strings.Join(bodyLines, cr + lf)
 
 		// split the request line into it's components
-		requests := strings.Split(requestLine, sp)
+		requests := strings.SplitN(requestLine, sp, 3)
 		method := requests[0]
 		url := requests[1]
 		version := requests[2]
@@ -342,3 +356,18 @@ func loadMovesMap() map[string]string {
 
 	return locationMap
 }
+
+func persist(message string) bool {
+	// get headers
+	_, _, _, headers, _ := decomposeRequest(message)
+	fmt.Println(headers["Connection:"])
+	switch (headers["Connection:"]) {
+		case "keep-alive":			
+			return true
+		case "close":
+			return false
+		default:
+			return false
+	}
+}
+
