@@ -48,7 +48,7 @@ func handleClient(conn net.Conn, channel chan [3]string) {
 	// defer conn.Close()
 
 	// get message of at maximum 512 bytes
-	var buf [512]byte
+	var buf [1024]byte
 	for {
 		// read input 
 		_, err := conn.Read(buf[0:])
@@ -112,7 +112,10 @@ func getNewResponse(serverResponse string, host string, url string) (bool, *Resp
 
 	if code == "200" {
 
-		os.Mkdir("../../cache/"+host, 0777)
+		exists, _ := fileExists("../../cache/"+host)
+		if !exists {
+			os.Mkdir("../../cache/"+host, 0777)
+		}
 
 		ioutil.WriteFile("../../cache/"+host+url, []byte(body), 0777)
 
@@ -292,4 +295,11 @@ func decomposeResponse(response string) (string, string, string, map[string]stri
 
 		return version, code, status, headers, body
 
+}
+
+func fileExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil { return true, nil }
+	if os.IsNotExist(err) { return false, nil }
+	return true, err
 }

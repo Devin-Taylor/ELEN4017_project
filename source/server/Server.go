@@ -55,7 +55,7 @@ func startUDPServer(service string) {
 
 func handleUDPClient(conn net.PacketConn) {
 	// get message of at maximum 512 bytes
-	var buf [512]byte	
+	var buf [1024]byte	
 	for {
 		// read input and get address of sender
 		_, addr, err := conn.ReadFrom(buf[0:])
@@ -82,7 +82,7 @@ func handleTCPClient(conn net.Conn) {
 	defer conn.Close()
 	defer fmt.Println("closing connection for ", conn.RemoteAddr())
 
-	var buf [512]byte
+	var buf [2048]byte
 	for {
 		// read input 
 		_, err := conn.Read(buf[0:])		

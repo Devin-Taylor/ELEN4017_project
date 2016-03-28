@@ -1,2 +1,0 @@
-localhost/index.html 
-localhost/test1.jpg 
