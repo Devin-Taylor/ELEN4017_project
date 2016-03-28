@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"io/ioutil"
-	//"time"
+	"time"
 )
 
 const httpVersion = "HTTP/1.1"
@@ -132,6 +132,11 @@ func composeResponse(message string) *ResponseMessage{
 		var response = NewResponseMessage()
 		response.version = httpVersion
 
+		// set response headers		
+		response.headerLines["Server:"] = "FooBar"
+		//response.headerLines["Date:"] = 
+		response.headerLines["Content-Language:"] = "en"
+
 		// make sure that version is compatible with server otherwise send a 505 response
 		if version != httpVersion && composeResponse {
 			fmt.Println("505")
@@ -187,6 +192,17 @@ func composeResponse(message string) *ResponseMessage{
 					html := string(b)
 
 					response.entityBody = html
+
+					// get last modified time
+     				stat, err := os.Stat(path + url)
+     				if err != nil {
+        				fmt.Println(err)
+     				}
+     				
+     				//time := stat.ModTime().Format("Mon, 02 Jan 2006 15:04:05 -0700")
+     				
+     				fmt.Println(stat.ModTime().Format(time.RFC1123Z))
+					response.headerLines["Last-Modified:"] = stat.ModTime().Format(time.RFC1123Z)//time.String()
 
 					// set flag
 					composeResponse = false
