@@ -135,7 +135,13 @@ func handleServer(conn net.Conn, method string, config configSettings) {
 					port = ":1235"
 				}
 
-				conn := dialAndSend(config.protocol, key+port, request)
+				if ip,_ := net.ResolveIPAddr("ip", key); ip.String() != strings.Split(conn.LocalAddr().String(),":")[0] || strings.ToUpper(config.connection) != "KEEP-ALIVE" {
+					
+					conn = dialAndSend(config.protocol, key+port, request)
+				} else {
+					_, err = conn.Write([]byte(request.toBytes()))
+					checkError(err)
+				}
 
 				fileName := getFileName(value)
 
