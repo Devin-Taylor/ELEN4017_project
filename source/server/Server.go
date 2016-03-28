@@ -1,4 +1,4 @@
-package main
+package main // what a change
 
 import (
 	"net"
@@ -107,7 +107,7 @@ func handleTCPClient(conn net.Conn) {
 		}
 		fmt.Println("New connection for ", conn.RemoteAddr())
 		fmt.Println("New connection on ", conn.LocalAddr())
-		
+
 		// convert message to string
 		message := string(buf[0:])		
 
