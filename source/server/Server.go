@@ -15,31 +15,10 @@ const path = "../../objects/"
 func main() {
 	service := ":1235"
 
-	go startTCPServer(service)
-
-	go startUDPServer(service)
-
-	// keep server running
-	for {
-
-	}
-}
-
-func startUDPServer(service string) {
-	defer fmt.Println("closing UDP server")
-	packetConn, err := net.ListenPacket("udp", service)
-	checkError(err)
-
-	for {
-		// handle any UDP connection
-		handleUDPClient(packetConn)
-	}
-}
-
-func startTCPServer(service string) {
-	defer fmt.Println("closing TCP server")
 	listener, err := net.Listen("tcp", service)
 	checkError(err)
+	//packetConn, err := net.ListenPacket("udp", service)
+	//checkError(err)
 
 	for {
 		// make a new socket for any TCP connection that is accepted
@@ -50,6 +29,9 @@ func startTCPServer(service string) {
 
 		// handle the TCP connection
 		go  handleTCPClient(conn)
+
+		// handle any UDP connection
+		//handleUDPClient(packetConn)
 	}
 }
 
@@ -95,20 +77,14 @@ func persist(message string) bool {
 
 func handleTCPClient(conn net.Conn) {
 	defer conn.Close()
-	defer fmt.Println("connection closing on port ", conn.RemoteAddr())
-
-	fmt.Println("New connection for ", conn.RemoteAddr())
-	fmt.Println("New connection for ", conn.LocalAddr())
-
-	persistant := true
 
 	var buf [512]byte
-	loop: for persistant {
+	for {
 		// read input 
 		_, err := conn.Read(buf[0:])
 		// if there was an error exit
 		if err != nil {
-			goto loop
+			return
 		}
 		// convert message to string
 			message := string(buf[0:])		
@@ -118,21 +94,48 @@ func handleTCPClient(conn net.Conn) {
 		// write the response to the socket
 		_, err2 := conn.Write(response.ToBytes())
 		if err2 != nil {
-			goto loop
-		}
-
-		if !persist(message){
-			// close the connection after this function executes
-			//defer conn.Close()	
-			//defer fmt.Println("closing connection")
-			persistant = false
-		} else {
-			//conn.SetKeepAlive(true)
-			//conn.SetReadDeadline(time.Time)
-			tcpConn := conn.(*net.TCPConn)
-			tcpConn.SetKeepAlive(true)
+			return
 		}
 	}
+
+	/*defer conn.Close()	
+	//defer fmt.Println("closing connection")
+	// get message of at maximum 512 bytes
+	var buf [512]byte
+	for {
+		// read input 
+		_, err := conn.Read(buf[0:])
+		//fmt.Println(n)
+		// if there was an error exit
+		if err != nil {
+			return
+		} else {
+			// convert message to string
+			message := string(buf[0:])		
+
+			// compose reponse to message
+			response := composeResponse(message)
+
+			// write the response to the socket
+			_, err2 := conn.Write(response.ToBytes())
+			if err2 != nil {
+				fmt.Println("error")
+			}
+
+			// check if the connection must be closed after this message
+			//_, _, _, headers, _ := decomposeRequest(message)
+			//fmt.Println(headers)
+			//fmt.Println(message)
+			if !persist(message){
+				// close the connection after this function executes
+				defer conn.Close()	
+				defer fmt.Println("closing connection")
+			} else {
+				//conn.SetKeepAlive(true)
+				//conn.SetReadDeadline(time.Time)
+			}
+		}		
+	}*/
 }
 
 func composeResponse(message string) *ResponseMessage{
@@ -295,14 +298,16 @@ func decomposeRequest(request string) (string, string, string, map[string]string
 		}
 		headerLines := temp[1:i]
 		for _, value := range headerLines {
+			//fmt.Println(value)
 			line := strings.Split(value, " ")
+			//fmt.Println("0: " + line[0] + " 1: " + line[1])
 			headers[line[0]] = line[1]
 		}
 		//check if there is any content in the body
 		var bodyLines []string
 		if i  < len(temp) {
 			// get the body content
-			bodyLines = temp[i+1:len(temp)]
+			bodyLines = temp[i:len(temp)]
 		}
 		body := strings.Join(bodyLines, cr + lf)
 
