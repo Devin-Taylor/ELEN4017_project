@@ -15,10 +15,20 @@ const path = "../../objects/"
 func main() {
 	service := ":1235"
 
+	go startTCPServer(service)
+
+	go startUDPServer(service)
+
+	// keep server running
+	for {
+
+	}
+}
+
+func startTCPServer(service string) {
+	defer fmt.Println("closing TCP server")
 	listener, err := net.Listen("tcp", service)
 	checkError(err)
-	//packetConn, err := net.ListenPacket("udp", service)
-	//checkError(err)
 
 	for {
 		// make a new socket for any TCP connection that is accepted
@@ -29,9 +39,17 @@ func main() {
 
 		// handle the TCP connection
 		go  handleTCPClient(conn)
+	}
+}
 
+func startUDPServer(service string) {
+	defer fmt.Println("closing UDP server")
+	packetConn, err := net.ListenPacket("udp", service)
+	checkError(err)
+
+	for {
 		// handle any UDP connection
-		//handleUDPClient(packetConn)
+		handleUDPClient(packetConn)
 	}
 }
 
@@ -77,19 +95,21 @@ func persist(message string) bool {
 
 func handleTCPClient(conn net.Conn) {
 	defer conn.Close()
+	defer fmt.Println("closing connection for ", conn.RemoteAddr())
 
 	var buf [512]byte
 	for {
 		// read input 
-		_, err := conn.Read(buf[0:])
-		fmt.Println("New connection for ", conn.RemoteAddr())
-		fmt.Println("New connection for ", conn.LocalAddr())
+		_, err := conn.Read(buf[0:])		
 		// if there was an error exit
 		if err != nil {
 			return
 		}
+		fmt.Println("New connection for ", conn.RemoteAddr())
+		fmt.Println("New connection on ", conn.LocalAddr())
+		
 		// convert message to string
-			message := string(buf[0:])		
+		message := string(buf[0:])		
 
 		// compose reponse to message
 		response := composeResponse(message)
@@ -99,45 +119,6 @@ func handleTCPClient(conn net.Conn) {
 			return
 		}
 	}
-
-	/*defer conn.Close()	
-	//defer fmt.Println("closing connection")
-	// get message of at maximum 512 bytes
-	var buf [512]byte
-	for {
-		// read input 
-		_, err := conn.Read(buf[0:])
-		//fmt.Println(n)
-		// if there was an error exit
-		if err != nil {
-			return
-		} else {
-			// convert message to string
-			message := string(buf[0:])		
-
-			// compose reponse to message
-			response := composeResponse(message)
-
-			// write the response to the socket
-			_, err2 := conn.Write(response.ToBytes())
-			if err2 != nil {
-				fmt.Println("error")
-			}
-
-			// check if the connection must be closed after this message
-			//_, _, _, headers, _ := decomposeRequest(message)
-			//fmt.Println(headers)
-			//fmt.Println(message)
-			if !persist(message){
-				// close the connection after this function executes
-				defer conn.Close()	
-				defer fmt.Println("closing connection")
-			} else {
-				//conn.SetKeepAlive(true)
-				//conn.SetReadDeadline(time.Time)
-			}
-		}		
-	}*/
 }
 
 func composeResponse(message string) *ResponseMessage{
