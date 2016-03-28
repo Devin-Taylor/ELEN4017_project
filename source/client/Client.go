@@ -148,7 +148,6 @@ func handleServer(conn net.Conn, method string, config configSettings) {
 				handlerServerSources(conn, "GET", fileName, config)
 			}
 		}
-
 		// launchPage(body)
 	}
 }
