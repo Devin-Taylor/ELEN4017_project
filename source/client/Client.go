@@ -91,9 +91,12 @@ func getUserInputs() (string, string, string) {
     fmt.Println("Enter URL ")
     fmt.Scanf("%s", &url)
 
+    //convert method to upper case
+    method = strings.ToUpper(method)
+
     var entityBody string
 
-    if strings.ToUpper(method) == "POST" || strings.ToUpper(method) == "PUT" {
+    if method == "POST" || method == "PUT" {
     	fmt.Println("Enter Text ")
     	fmt.Scanf("%s", &entityBody)
     } else {
