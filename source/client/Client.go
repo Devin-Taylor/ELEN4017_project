@@ -278,7 +278,7 @@ func printToConsole(version string, code string, status string, headerLines map[
 	var allHeaders string
 
 	for key, value := range headerLines {
-		allHeaders = allHeaders + key + " " + value + "\n"
+		allHeaders = allHeaders + key + ": " + value + "\n"
 	}
 
 	content := version + " " + code + " " + status + "\n" + allHeaders + "\n\n" + body
