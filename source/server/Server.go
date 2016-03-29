@@ -167,10 +167,13 @@ func composeResponse(message string) *ResponseMessage{
         				fmt.Println(err)
      				}
      				modTime := stat.ModTime()
-     				t, _ := time.Parse(time.RFC1123Z, headers["If-Modified-Since"])
+     				t, _ := time.Parse(time.RFC1123Z, headers["If-Modified-Since:"])
 
+     				//fmt.Println("header: ",headers["If-Modified-Since:"])
+     				//fmt.Println("parsed and formatted header: ",t.Format(time.RFC1123Z))
+     				//fmt.Println("formatted mod time: ",modTime.Format(time.RFC1123Z))
      				// check if modified time is after a last modified time
-     				if headers["If-Modified-Since"] == "" || modTime.Before(t) || modTime.Equal(t) {
+     				if headers["If-Modified-Since:"] == "" || modTime.Before(t) || modTime.Equal(t) {
 						fmt.Println("200")
 						// compose 200
                     	response.statusCode = "200"
