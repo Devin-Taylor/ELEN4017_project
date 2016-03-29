@@ -34,6 +34,7 @@ func startTCPServer(service string) {
 	for {
 		// make a new socket for any TCP connection that is accepted
 		conn, err := listener.Accept()
+		conn.SetDeadline(time.Now().Add(time.Second*10))
 		if err != nil {
 			continue
 		}
