@@ -123,7 +123,7 @@ func handleServer(conn net.Conn, method string, config configSettings) bool {
 
 	for true {
 		// get message
-		var buf [8192]byte
+		var buf [128]byte
 		// read input 
 		n, err := conn.Read(buf[0:])
 		checkError(err)
@@ -134,7 +134,8 @@ func handleServer(conn net.Conn, method string, config configSettings) bool {
 		if codeTest == "503" {
 			return false
 		}
-		if strings.Contains(response, "0\r\n\r\n") || n == 0 {
+		if strings.Contains(response, "\r\n0\r\n\r\n") || n == 0 {
+			fmt.Println("HELLO", n, strings.Contains(response, "\r\n0\r\n\r\n"))
 			break
 		}
 	}
