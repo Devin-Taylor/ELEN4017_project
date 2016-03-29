@@ -1,4 +1,4 @@
-package main // what a change
+package main
 
 import (
 	"net"
@@ -91,13 +91,14 @@ func handleTCPClient(conn net.Conn) {
 			return
 		}
 		fmt.Println("New connection for ", conn.RemoteAddr())
-		fmt.Println("New connection on ", conn.LocalAddr())
+		//fmt.Println("New connection on ", conn.LocalAddr())
 
 		// convert message to string
 		message := string(buf[0:])		
 
 		// compose reponse to message
 		response := composeResponse(message)
+		fmt.Println(response.ToString())
 		// write the response to the socket
 		_, err2 := conn.Write(response.ToBytes())
 		if err2 != nil {
@@ -118,9 +119,9 @@ func composeResponse(message string) *ResponseMessage{
 		response.version = httpVersion
 
 		// set response headers		
-		response.headerLines["Server:"] = "FooBar"
-		response.headerLines["Date:"] = time.Now().Format(time.RFC1123Z)
-		response.headerLines["Content-Language:"] = "en"
+		response.headerLines["Server"] = "FooBar"
+		response.headerLines["Date"] = time.Now().Format(time.RFC1123Z)
+		response.headerLines["Content-Language"] = "en"
 
 		// make sure that version is compatible with server otherwise send a 505 response
 		if version != httpVersion && composeResponse {
@@ -139,7 +140,7 @@ func composeResponse(message string) *ResponseMessage{
 			// compose 301
 			response.statusCode = "301"
 			response.phrase = "Moved Permanently"
-			response.headerLines["Location:"] = locationMap[url]
+			response.headerLines["Location"] = locationMap[url]
 			response.entityBody = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n<title>301 Moved Permanently</title>\n</head>\n<body>\n<h1>Moved Permanently</h1>\n<p>The document has moved <a href=\"" + url + "\">here</a>.</p>\n</body>\n</html>"
 			// set flag
 			composeResponse = false
@@ -166,14 +167,11 @@ func composeResponse(message string) *ResponseMessage{
      				if err != nil {
         				fmt.Println(err)
      				}
-     				modTime := stat.ModTime()
-     				t, _ := time.Parse(time.RFC1123Z, headers["If-Modified-Since:"])
+     				serverTime, _ := time.Parse(time.RFC1123Z, stat.ModTime().Format(time.RFC1123Z))
+     				proxyTime, _ := time.Parse(time.RFC1123Z, headers["If-Modified-Since"])
 
-     				//fmt.Println("header: ",headers["If-Modified-Since:"])
-     				//fmt.Println("parsed and formatted header: ",t.Format(time.RFC1123Z))
-     				//fmt.Println("formatted mod time: ",modTime.Format(time.RFC1123Z))
      				// check if modified time is after a last modified time
-     				if headers["If-Modified-Since:"] == "" || modTime.Before(t) || modTime.Equal(t) {
+     				if headers["If-Modified-Since"] == "" || serverTime.After(proxyTime){
 						fmt.Println("200")
 						// compose 200
                     	response.statusCode = "200"
@@ -192,8 +190,7 @@ func composeResponse(message string) *ResponseMessage{
 						response.entityBody = html					
      				
      					// add last modified header
-     					fmt.Println(modTime.Format(time.RFC1123Z))
-						response.headerLines["Last-Modified:"] = modTime.Format(time.RFC1123Z)
+						response.headerLines["Last-Modified"] = serverTime.Format(time.RFC1123Z)
      				} else {
      					fmt.Println("304")
 						// compose 304
@@ -285,6 +282,8 @@ func decomposeRequest(request string) (string, string, string, map[string]string
 		const lf = "\x0a"
 		headers := make(map[string]string)
 
+		fmt.Println("Message: " + request)
+
 		temp := strings.Split(request, cr + lf)
 		// get the request line for further processing
 		requestLine := temp[0]
@@ -299,7 +298,7 @@ func decomposeRequest(request string) (string, string, string, map[string]string
 		headerLines := temp[1:i]
 		for _, value := range headerLines {
 			//fmt.Println(value)
-			line := strings.SplitN(value, " ", 2)
+			line := strings.SplitN(value, ":"+sp, 2)
 			//fmt.Println("0: " + line[0] + " 1: " + line[1])
 			headers[line[0]] = line[1]
 		}
@@ -307,7 +306,7 @@ func decomposeRequest(request string) (string, string, string, map[string]string
 		var bodyLines []string
 		if i  < len(temp) {
 			// get the body content
-			bodyLines = temp[i:len(temp)]
+			bodyLines = temp[i+1:len(temp)]
 		}
 		body := strings.Join(bodyLines, cr + lf)
 
@@ -360,11 +359,11 @@ func loadMovesMap() map[string]string {
 	return locationMap
 }
 
-func persist(message string) bool {
+/*func persist(message string) bool {
 	// get headers
 	_, _, _, headers, _ := decomposeRequest(message)
-	fmt.Println(headers["Connection:"])
-	switch (headers["Connection:"]) {
+	fmt.Println(headers["Connection"])
+	switch (headers["Connection"]) {
 		case "keep-alive":			
 			return true
 		case "close":
@@ -372,5 +371,5 @@ func persist(message string) bool {
 		default:
 			return false
 	}
-}
+}*/
 

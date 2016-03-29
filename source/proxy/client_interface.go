@@ -79,7 +79,9 @@ func handleClient(conn net.Conn, channel chan [3]string) {
 
 	if isUpdated {
 		destination := strings.Split(host, ":")[0]+url
+		fmt.Println("destination: ", destination)
 		locationMap[destination] = newTime
+		fmt.Println("time: ", locationMap[destination])
 		saveMap(locationMap, "../../cache/cache_map.txt")
 	}
 	// write the response message back to the client
@@ -125,7 +127,8 @@ func getNewResponse(serverResponse string, host string, url string) (bool, *Resp
 		response.statusCode = "200"
 		response.phrase = "OK"
 		response.entityBody = body
-		newTime := headers["Last-Modified::"]
+		fmt.Println(headers)
+		newTime := headers["Last-Modified"]
 		return true, response, newTime
 	}
 
@@ -143,7 +146,7 @@ func checkInCache(url string, host string) (bool, string, map[string]string) {
 	locationMap := loadMap("../../cache/cache_map.txt")
 
 	lastModified := locationMap[host+url]
-
+    fmt.Println("last modified:", locationMap[host+url])
 	if lastModified != "" {
 		return true, lastModified, locationMap
 	}
@@ -151,7 +154,7 @@ func checkInCache(url string, host string) (bool, string, map[string]string) {
 }
 
 func modifyHeaders(lastModified string, headers map[string]string) map[string]string {
-	headers["If-Modified-Since:"] = lastModified
+	headers["If-Modified-Since"] = lastModified
 
 	return headers
 }
@@ -165,7 +168,7 @@ func compileNewRequest(method string, url string, version string, headers map[st
 	requestString += version + cr + lf
 	//add header lines
 	for headerFieldName, value := range headers {
-		requestString += headerFieldName + sp
+		requestString += headerFieldName + ":" + sp
 		requestString += value + cr + lf
 	}
 	requestString += cr + lf
@@ -175,6 +178,7 @@ func compileNewRequest(method string, url string, version string, headers map[st
 
 func handleServer(relayRequest string, host string) string {
 	// initiate connection
+	fmt.Println(host)
 	conn, err := net.Dial("tcp", host)
 	checkError(err)
 	// write request information to the server
@@ -214,7 +218,7 @@ func decomposeRequest(request string) (string, string, string, map[string]string
 		headerLines := temp[1:i]
 		for _, value := range headerLines {
 			//fmt.Println(value)
-			line := strings.SplitN(value, " ", 2)
+			line := strings.SplitN(value, ":"+" ", 2)
 			//fmt.Println("0: " + line[0] + " 1: " + line[1])
 			headers[line[0]] = line[1]
 		}
@@ -242,7 +246,7 @@ func mapRequest(url string, headers map[string]string, channel chan [3]string, c
 	var host string
 	// find the hosts address
 	for key, value := range headers {
-		if(strings.ToUpper(key) == "HOST:"){
+		if(strings.ToUpper(key) == "HOST"){
 			host = value
 			break
 		}
@@ -276,7 +280,7 @@ func decomposeResponse(response string) (string, string, string, map[string]stri
 		}
 		headerLines := temp[1:i]
 		for _, value := range headerLines {
-			line := strings.SplitN(value, sp, 2)
+			line := strings.SplitN(value, ":"+sp, 2)
 			headers[line[0]] = line[1]
 		}
 		//check if there is any content in the body

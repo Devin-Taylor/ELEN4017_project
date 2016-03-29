@@ -1,4 +1,4 @@
-package main // for you Devin
+package main
 
 import (
 	"net"
@@ -34,6 +34,7 @@ func main() {
 	method, url, entityBody := getUserInputs()
 	// set request message
 	request := setRequestMessage(service, config, method, url, entityBody)
+	fmt.Println(request.toString())
 	// check if proxy is required
 	if strings.ToUpper(config.proxy) == "ON" {
 		service = promptProxy()
@@ -187,7 +188,7 @@ func handlerServerSources(conn net.Conn, method string, fileName string, config 
 			break
 		}
 
-		httpUrl := headers["Location:"]
+		httpUrl := headers["Location"]
 
 		httpUrl = strings.Split(httpUrl, "//")[1]
 
@@ -300,7 +301,7 @@ func decomposeResponse(response string) (string, string, string, map[string]stri
 		}
 		headerLines := temp[1:i]
 		for _, value := range headerLines {
-			line := strings.SplitN(value, sp, 2)
+			line := strings.SplitN(value, ":"+sp, 2)
 			headers[line[0]] = line[1]
 		}
 		//check if there is any content in the body
