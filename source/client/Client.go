@@ -1,11 +1,10 @@
-package main // for you Devin
+package main
 
 import (
 	"net"
 	"os"
 	"os/exec"
 	"fmt"
-	// "bufio"
 	"io/ioutil"
 	"strings"
 	"regexp"
@@ -39,10 +38,19 @@ func main() {
 		service = promptProxy()
 	}
 	// connect and write to server
+	responseFail:
+	timer := newRoundTripTimer()
+	timer.loadTimerMap("../../documentation/timer_map.txt")
+	timer.startTimer()
 	conn := dialAndSend(config.protocol, service, request)
 	// call to handle server response
-	handleServer(conn, method, config)
-
+	responseTest := handleServer(conn, method, config)
+	if !responseTest {
+		goto responseFail
+	}
+	timer.stopTimer()
+	timer.addToTimer(config.protocol + " " + config.connection + " " + config.proxy)
+	timer.writeTimerToFile("../../documentation/timer_map.txt")
 	os.Exit(0)
 }
 
@@ -103,29 +111,40 @@ func getUserInputs() (string, string, string) {
     return method, url, entityBody
 }
 
-func handleServer(conn net.Conn, method string, config configSettings) {
+func handleServer(conn net.Conn, method string, config configSettings) bool {
 	// close the connection after this function executes
 	defer conn.Close()
 
-	// get message
-	var buf [8192]byte
-	// read input 
-	_, err := conn.Read(buf[0:])
-	// if there was an error exit
-	checkError(err)
-	// convert message to string and decompose it
-	response := string(buf[0:])
+	var response string
 
-	version, code, status, headers, body := decomposeResponse(response)
-	// if status = 200 then can be from multiple different requests
+	for true {
+		// get message
+		var buf [8192]byte
+		// read input 
+		n, err := conn.Read(buf[0:])
+		checkError(err)
+		// convert message to string and decompose it
+		response += string(buf[0:])
+		codeTest := response[9:12]
+		fmt.Println(codeTest)
+		if codeTest == "503" {
+			return false
+		}
+		if strings.Contains(response, "0\r\n\r\n") || n == 0 {
+			break
+		}
+	}
 
-	printToConsole(version, code, status, headers, body)
+	
+		version, code, status, headers, body := decomposeResponse(response)
+		// if status = 200 then can be from multiple different requests
+		printToConsole(version, code, status, headers, body)
+	// }
 	
 	if method != "HEAD" {
 
 		if checkForSources(body) {
 			sourceMap := retrieveSources(body)
-
 			for key, value := range sourceMap {
 				// compile the request message
 
@@ -144,7 +163,7 @@ func handleServer(conn net.Conn, method string, config configSettings) {
 				if ip,_ := net.ResolveIPAddr("ip", key); ip.String() != strings.Split(conn.LocalAddr().String(),":")[0] || strings.ToUpper(config.connection) != "KEEP-ALIVE" {
 					conn = dialAndSend(config.protocol, service, request)
 				} else {
-					_, err = conn.Write([]byte(request.toBytes()))
+					_, err := conn.Write([]byte(request.toBytes()))
 					checkError(err)
 				}
 				fileName := getFileName(value)
@@ -154,6 +173,7 @@ func handleServer(conn net.Conn, method string, config configSettings) {
 		}
 		// launchPage(body)
 	}
+	return true
 }
 
 func getFileName(value string) string {
@@ -253,7 +273,6 @@ func retrieveSources(body string) map[string]string {
 	for _, value := range allMatches {
 		sourceStrings = append(sourceStrings, body[value[0]:value[1]])
 	}
-
 	// if regexpString == "src=\"(.*?)\"" {
 	// 	splitString = "src=\"http://"
 	// } else {
@@ -261,11 +280,12 @@ func retrieveSources(body string) map[string]string {
 	// }
 
 	for _, value := range sourceStrings {
-		withoutHttp := strings.Split(value, "src=\"http://")
+		withoutHttp := strings.Split(value, "//")
 		splitURL := strings.SplitAfterN(withoutHttp[1], "/", 2)
 		urlToFileMap[strings.Replace(splitURL[0], "/", "", 2)] = "/" + strings.Replace(splitURL[1], "\"", "", 2)
-	}
 
+		fmt.Println(urlToFileMap)
+	}
 	return urlToFileMap
 }
 
