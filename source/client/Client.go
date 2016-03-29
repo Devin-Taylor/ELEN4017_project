@@ -33,6 +33,7 @@ func main() {
 	method, url, entityBody := getUserInputs()
 	// set request message
 	request := setRequestMessage(service, config, method, url, entityBody)
+	
 	// check if proxy is required
 	if strings.ToUpper(config.proxy) == "ON" {
 		service = promptProxy()
@@ -98,9 +99,12 @@ func getUserInputs() (string, string, string) {
     fmt.Println("Enter URL ")
     fmt.Scanf("%s", &url)
 
+    //convert method to upper case
+    method = strings.ToUpper(method)
+
     var entityBody string
 
-    if strings.ToUpper(method) == "POST" || strings.ToUpper(method) == "PUT" {
+    if method == "POST" || method == "PUT" {
     	fmt.Println("Enter Text ")
     	fmt.Scanf("%s", &entityBody)
     } else {
@@ -207,7 +211,7 @@ func handlerServerSources(conn net.Conn, method string, fileName string, config 
 			break
 		}
 
-		httpUrl := headers["Location:"]
+		httpUrl := headers["Location"]
 
 		httpUrl = strings.Split(httpUrl, "//")[1]
 
@@ -294,7 +298,7 @@ func printToConsole(version string, code string, status string, headerLines map[
 	var allHeaders string
 
 	for key, value := range headerLines {
-		allHeaders = allHeaders + key + " " + value + "\n"
+		allHeaders = allHeaders + key + ": " + value + "\n"
 	}
 
 	content := version + " " + code + " " + status + "\n" + allHeaders + "\n\n" + body
@@ -320,7 +324,7 @@ func decomposeResponse(response string) (string, string, string, map[string]stri
 		}
 		headerLines := temp[1:i]
 		for _, value := range headerLines {
-			line := strings.SplitN(value, sp, 2)
+			line := strings.SplitN(value, ":"+sp, 2)
 			headers[line[0]] = line[1]
 		}
 		//check if there is any content in the body

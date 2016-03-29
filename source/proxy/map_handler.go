@@ -25,7 +25,6 @@ func loadMap(mapLocation string) map[string]string {
 
 	for _, value := range lines {
 		locations := strings.SplitN(value, "\x20", 2)
-
 		locationMap[locations[0]] = locations[1]
 	}
 
@@ -33,7 +32,6 @@ func loadMap(mapLocation string) map[string]string {
 }
 
 func saveMap(locationMap map[string]string, mapLocation string) {
-
 	var writeString string
 
 	for key, value := range locationMap {

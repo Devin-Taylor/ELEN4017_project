@@ -1,4 +1,4 @@
-package main // what a change
+package main
 
 import (
 	"net"
@@ -7,6 +7,7 @@ import (
 	"strings"
 	"io/ioutil"
 	"time"
+	"strconv"
 )
 
 const httpVersion = "HTTP/1.1"
@@ -33,6 +34,7 @@ func startTCPServer(service string) {
 	for {
 		// make a new socket for any TCP connection that is accepted
 		conn, err := listener.Accept()
+		conn.SetDeadline(time.Now().Add(time.Second*10))
 		if err != nil {
 			continue
 		}
@@ -91,7 +93,6 @@ func handleTCPClient(conn net.Conn) {
 			return
 		}
 		fmt.Println("New connection for ", conn.RemoteAddr())
-		fmt.Println("New connection on ", conn.LocalAddr())
 
 		// convert message to string
 		message := string(buf[0:])		
@@ -118,9 +119,9 @@ func composeResponse(message string) *ResponseMessage{
 		response.version = httpVersion
 
 		// set response headers		
-		response.headerLines["Server:"] = "FooBar"
-		response.headerLines["Date:"] = time.Now().Format(time.RFC1123Z)
-		response.headerLines["Content-Language:"] = "en"
+		response.headerLines["Server"] = "FooBar"
+		response.headerLines["Date"] = time.Now().Format(time.RFC1123Z)
+		response.headerLines["Content-Language"] = "en"
 
 		// make sure that version is compatible with server otherwise send a 505 response
 		if version != httpVersion && composeResponse {
@@ -129,6 +130,7 @@ func composeResponse(message string) *ResponseMessage{
 			response.statusCode = "505"
 			response.phrase = "HTTP Version Not Supported"
 			response.entityBody = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n<title>505 Version Not Supported</title>\n</head>\n<body>\n<h1>Version Not Supported</h1>\n<p>Your HTTP version is not supported by this server, please use HTTP/1.1.</p>\n</body>\n</html>"
+			response.headerLines["Content-Length"] = strconv.Itoa(len([]byte(response.entityBody)))
 			// set flag
 			composeResponse = false
 		}
@@ -139,8 +141,9 @@ func composeResponse(message string) *ResponseMessage{
 			// compose 301
 			response.statusCode = "301"
 			response.phrase = "Moved Permanently"
-			response.headerLines["Location:"] = locationMap[url]
+			response.headerLines["Location"] = locationMap[url]
 			response.entityBody = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n<title>301 Moved Permanently</title>\n</head>\n<body>\n<h1>Moved Permanently</h1>\n<p>The document has moved <a href=\"" + url + "\">here</a>.</p>\n</body>\n</html>"
+			response.headerLines["Content-Length"] = strconv.Itoa(len([]byte(response.entityBody)))
 			// set flag
 			composeResponse = false
 		}
@@ -153,6 +156,7 @@ func composeResponse(message string) *ResponseMessage{
 			response.statusCode = "404"
 			response.phrase = "Not Found"
 			response.entityBody = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n<title>404 Not Found</title>\n</head>\n<body>\n<h1>Not Found</h1>\n<p>The requested URL " + url + " was not found on this server.</p>\n</body>\n</html>"
+			response.headerLines["Content-Length"] = strconv.Itoa(len([]byte(response.entityBody)))
 			// set flag
 			composeResponse = false
 		}
@@ -166,11 +170,11 @@ func composeResponse(message string) *ResponseMessage{
      				if err != nil {
         				fmt.Println(err)
      				}
-     				modTime := stat.ModTime()
-     				t, _ := time.Parse(time.RFC1123Z, headers["If-Modified-Since"])
+     				serverTime, _ := time.Parse(time.RFC1123Z, stat.ModTime().Format(time.RFC1123Z))
+     				proxyTime, _ := time.Parse(time.RFC1123Z, headers["If-Modified-Since"])
 
      				// check if modified time is after a last modified time
-     				if headers["If-Modified-Since"] == "" || modTime.Before(t) || modTime.Equal(t) {
+     				if headers["If-Modified-Since"] == "" || serverTime.After(proxyTime){
 						fmt.Println("200")
 						// compose 200
                     	response.statusCode = "200"
@@ -186,11 +190,11 @@ func composeResponse(message string) *ResponseMessage{
 						b, err := ioutil.ReadAll(file)
 						html := string(b)
 
-						response.entityBody = html					
+						response.entityBody = html	
+						response.headerLines["Content-Length"] = strconv.Itoa(len([]byte(response.entityBody)))			
      				
      					// add last modified header
-     					fmt.Println(modTime.Format(time.RFC1123Z))
-						response.headerLines["Last-Modified:"] = modTime.Format(time.RFC1123Z)
+						response.headerLines["Last-Modified"] = serverTime.Format(time.RFC1123Z)
      				} else {
      					fmt.Println("304")
 						// compose 304
@@ -198,6 +202,7 @@ func composeResponse(message string) *ResponseMessage{
 						response.phrase = "Not Modified"
 
 						response.entityBody = ""
+						response.headerLines["Content-Length"] = strconv.Itoa(len([]byte(response.entityBody)))
      				}
 
 					
@@ -210,6 +215,13 @@ func composeResponse(message string) *ResponseMessage{
 					// compose 200
                     response.statusCode = "200"
 					response.phrase = "OK"
+
+					// get last modified time
+     				stat, err := os.Stat(path + url)
+     				if err != nil {
+        				fmt.Println(err)
+     				}
+     				response.headerLines["Content-Length"] = strconv.FormatInt(stat.Size(),10)
 
 					// set flag
 					composeResponse = false
@@ -226,6 +238,7 @@ func composeResponse(message string) *ResponseMessage{
 					checkError(err)
 
 					response.entityBody = "<html>\n<body>\n<h1>The file was created.</h1>\n</body>\n</html>"
+					response.headerLines["Content-Length"] = strconv.Itoa(len([]byte(response.entityBody)))
 
 					// set flag
 					composeResponse = false
@@ -241,6 +254,7 @@ func composeResponse(message string) *ResponseMessage{
 					checkError(err)
 
 					response.entityBody = "<html>\n<body>\n<h1>URL deleted.</h1>\n</body>\n</html>"
+					response.headerLines["Content-Length"] = strconv.Itoa(len([]byte(response.entityBody)))
 
 					//set flag
 					composeResponse = false
@@ -257,6 +271,7 @@ func composeResponse(message string) *ResponseMessage{
 					checkError(err)
 
 					response.entityBody = "<html>\n<body>\n<h1>Request Processed Successfully.</h1>\n</body>\n</html>"
+					response.headerLines["Content-Length"] = strconv.Itoa(len([]byte(response.entityBody)))
 
 					// set flag
 					composeResponse = false
@@ -267,6 +282,7 @@ func composeResponse(message string) *ResponseMessage{
 					response.statusCode = "400"
 					response.phrase = "Bad Request"
 					response.entityBody = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n<title>400 Bad Request</title>\n</head>\n<body>\n<h1>Bad Request</h1>\n<p>Your browser sent a request that this server could not understand.</p>\n<p>The request line contained invalid characters following the protocol string.</p>\n</body>\n</html>"
+					response.headerLines["Content-Length"] = strconv.Itoa(len([]byte(response.entityBody)))
 					// set flag
 					composeResponse = false
 
@@ -295,16 +311,16 @@ func decomposeRequest(request string) (string, string, string, map[string]string
 		}
 		headerLines := temp[1:i]
 		for _, value := range headerLines {
-			//fmt.Println(value)
-			line := strings.SplitN(value, " ", 2)
-			//fmt.Println("0: " + line[0] + " 1: " + line[1])
+			
+			line := strings.SplitN(value, ":"+sp, 2)
+
 			headers[line[0]] = line[1]
 		}
 		//check if there is any content in the body
 		var bodyLines []string
 		if i  < len(temp) {
 			// get the body content
-			bodyLines = temp[i:len(temp)]
+			bodyLines = temp[i+1:len(temp)]
 		}
 		body := strings.Join(bodyLines, cr + lf)
 
@@ -356,18 +372,3 @@ func loadMovesMap() map[string]string {
 
 	return locationMap
 }
-
-func persist(message string) bool {
-	// get headers
-	_, _, _, headers, _ := decomposeRequest(message)
-	fmt.Println(headers["Connection:"])
-	switch (headers["Connection:"]) {
-		case "keep-alive":			
-			return true
-		case "close":
-			return false
-		default:
-			return false
-	}
-}
-
