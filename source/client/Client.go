@@ -34,7 +34,7 @@ func main() {
 	method, url, entityBody := getUserInputs()
 	// set request message
 	request := setRequestMessage(service, config, method, url, entityBody)
-	fmt.Println(request.toString())
+	
 	// check if proxy is required
 	if strings.ToUpper(config.proxy) == "ON" {
 		service = promptProxy()

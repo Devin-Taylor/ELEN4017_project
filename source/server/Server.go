@@ -91,14 +91,12 @@ func handleTCPClient(conn net.Conn) {
 			return
 		}
 		fmt.Println("New connection for ", conn.RemoteAddr())
-		//fmt.Println("New connection on ", conn.LocalAddr())
 
 		// convert message to string
 		message := string(buf[0:])		
 
 		// compose reponse to message
 		response := composeResponse(message)
-		fmt.Println(response.ToString())
 		// write the response to the socket
 		_, err2 := conn.Write(response.ToBytes())
 		if err2 != nil {
@@ -282,8 +280,6 @@ func decomposeRequest(request string) (string, string, string, map[string]string
 		const lf = "\x0a"
 		headers := make(map[string]string)
 
-		fmt.Println("Message: " + request)
-
 		temp := strings.Split(request, cr + lf)
 		// get the request line for further processing
 		requestLine := temp[0]
@@ -297,9 +293,9 @@ func decomposeRequest(request string) (string, string, string, map[string]string
 		}
 		headerLines := temp[1:i]
 		for _, value := range headerLines {
-			//fmt.Println(value)
+			
 			line := strings.SplitN(value, ":"+sp, 2)
-			//fmt.Println("0: " + line[0] + " 1: " + line[1])
+
 			headers[line[0]] = line[1]
 		}
 		//check if there is any content in the body
@@ -358,18 +354,3 @@ func loadMovesMap() map[string]string {
 
 	return locationMap
 }
-
-/*func persist(message string) bool {
-	// get headers
-	_, _, _, headers, _ := decomposeRequest(message)
-	fmt.Println(headers["Connection"])
-	switch (headers["Connection"]) {
-		case "keep-alive":			
-			return true
-		case "close":
-			return false
-		default:
-			return false
-	}
-}*/
-
