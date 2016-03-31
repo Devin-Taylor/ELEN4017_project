@@ -30,10 +30,10 @@ func main() {
 	// get the user to input the method to be used as well as the file/url requested
 	method, url, body := getUserInputs()
 
-	config := initializeConfig()
+	config := lib.InitializeConfig()
 
-	if strings.ToUpper(config.protocol) == "UDP" {
-		config.connection = "close"
+	if strings.ToUpper(config.Protocol) == "UDP" {
+		config.Connection = "close"
 	}
 
 	handleRequest(method, url, body, host)
@@ -41,30 +41,22 @@ func main() {
 
 func handleRequest(method string, url string, body string, host string) {
 	// read configuration
-<<<<<<< HEAD:source/client/client.go
-	config := initializeConfig()
-=======
 	config := lib.InitializeConfig()
-	// set request message
-	request := lib.SetRequestMessage(host, config, method, url, body)
->>>>>>> f3f3f702c14d3cfb115c898027bcb0f6945062db:src/client/client.go
+	var dialHost string
 	// check for proxy
 	if config.Proxy != "off" {
-		host = config.Proxy
+		dialHost = config.Proxy
+	} else {
+		dialHost = host
 	}
 	// create connection
-<<<<<<< HEAD:source/client/client.go
-	conn, err := net.Dial(config.protocol, host)
-	checkError(err)
+	conn, err := net.Dial(config.Protocol, dialHost)
+	lib.CheckError(err)
 	defer conn.Close()
 
 	keepAlive:
 	// set request message
-	request := setRequestMessage(host, config, method, url, body)
-=======
-	conn, err := net.Dial(config.Protocol, host)
-	lib.CheckError(err)
->>>>>>> f3f3f702c14d3cfb115c898027bcb0f6945062db:src/client/client.go
+	request := lib.SetRequestMessage(host, config, method, url, body)
 	// write request to connection
 	_, err = conn.Write(request.ToBytes())
 	lib.CheckError(err)
@@ -124,13 +116,8 @@ func handleRequest(method string, url string, body string, host string) {
 			var buf [65000]byte
 			// read input 
 			n, err = conn.Read(buf[0:])
-<<<<<<< HEAD:source/client/client.go
-			checkError(err)
-			response += string(buf[0:n])
-=======
 			lib.CheckError(err)
-			response += string(buf[0:])
->>>>>>> f3f3f702c14d3cfb115c898027bcb0f6945062db:src/client/client.go
+			response += string(buf[0:n])
 			if strings.Contains(response, "\r\n0\r\n\r\n") || n == 0 {
 					break
 			}
@@ -140,15 +127,9 @@ func handleRequest(method string, url string, body string, host string) {
 			var buf [65000]byte
 			// read input 
 			n, err = conn.Read(buf[0:])
-<<<<<<< HEAD:source/client/client.go
-			checkError(err)
+			lib.CheckError(err)
 			response += string(buf[0:n])
 			lengthDiff -= 65000
-=======
-			lib.CheckError(err)
-			response += string(buf[0:])
-			lengthDiff -= 4000
->>>>>>> f3f3f702c14d3cfb115c898027bcb0f6945062db:src/client/client.go
 		}
 		
 	}
@@ -169,7 +150,7 @@ func handleRequest(method string, url string, body string, host string) {
 				port = ":80"
 			}
 			ip,_ := net.ResolveIPAddr("ip", host)
-			if config.connection != "keep-alive" || ip.String() != strings.Split(conn.LocalAddr().String(),":")[0] {
+			if config.Connection != "keep-alive" || ip.String() != strings.Split(conn.LocalAddr().String(),":")[0] {
 				fmt.Println("HERE")
 				handleRequest("GET", url, "", host+port)
 			} else {
