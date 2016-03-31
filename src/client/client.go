@@ -68,7 +68,6 @@ func handleRequest(method string, url string, body string, host string) {
 
 	response := string(buf[0:n])
 	version, code, status, headers, _ := decomposeResponse(response)
-
 	var port string
 
 	switch code {
