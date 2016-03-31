@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"io/ioutil"
+	"lib"
 )
 
 func main() {
@@ -13,7 +14,7 @@ func main() {
 
 	listener, err := net.Listen("tcp", service)
 	//packetConn, err := net.ListenPacket("udp", service)
-	checkError(err)
+	lib.CheckError(err)
 	// initialize map
 	innerMap := make(map[string]string)
 	urlMap := make(map[string]map[string]string)
@@ -31,13 +32,6 @@ func main() {
 	// add mapping values to the map
 	innerMap[returnArray[0]] = returnArray[2]
 	urlMap[returnArray[1]] = innerMap
-	}
-}
-
-func checkError(err error) {
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Fatal error: %s", err.Error())
-		os.Exit(1)
 	}
 }
 
@@ -82,11 +76,11 @@ func handleClient(conn net.Conn, channel chan [3]string) {
 	}
 	// write the response message back to the client
 	_, err = conn.Write(newResponse.ToBytes())
-	checkError(err)
+	lib.CheckError(err)
 	}
 }
 
-func getNewResponse(serverResponse string, host string, url string) (bool, *ResponseMessage, string) {
+func getNewResponse(serverResponse string, host string, url string) (bool, *lib.ResponseMessage, string) {
 	version, code, status, headers, body := decomposeResponse(serverResponse)
 
 	fmt.Println(code)
@@ -94,16 +88,16 @@ func getNewResponse(serverResponse string, host string, url string) (bool, *Resp
 	if code == "304" {
 		file, _ := os.Open("../../cache/"+host+url)
 		defer file.Close()
-		var response = NewResponseMessage()
-		response.version = version
-		response.headerLines = headers
+		var response = lib.NewResponseMessage()
+		response.Version = version
+		response.HeaderLines = headers
 		// compose 200
-	    response.statusCode = "200"
-		response.phrase = "OK"
+	    response.StatusCode = "200"
+		response.Phrase = "OK"
 		// read from file and convert to string
 		b, _ := ioutil.ReadAll(file)
 		html := string(b)
-		response.entityBody = html
+		response.EntityBody = html
 
 		return false, response, ""
 	} 
@@ -117,22 +111,22 @@ func getNewResponse(serverResponse string, host string, url string) (bool, *Resp
 
 		ioutil.WriteFile("../../cache/"+host+url, []byte(body), 0777)
 
-		var response = NewResponseMessage()
-		response.version = version
-		response.headerLines = headers
-		response.statusCode = "200"
-		response.phrase = "OK"
-		response.entityBody = body
+		var response = lib.NewResponseMessage()
+		response.Version = version
+		response.HeaderLines = headers
+		response.StatusCode = "200"
+		response.Phrase = "OK"
+		response.EntityBody = body
 		newTime := headers["Last-Modified"]
 		return true, response, newTime
 	}
 
-	var response = NewResponseMessage()
-	response.version = version
-	response.headerLines = headers
-	response.statusCode = code
-	response.phrase = status
-	response.entityBody = body
+	var response = lib.NewResponseMessage()
+	response.Version = version
+	response.HeaderLines = headers
+	response.StatusCode = code
+	response.Phrase = status
+	response.EntityBody = body
 
 	return false, response, ""
 }
@@ -174,10 +168,10 @@ func handleServer(relayRequest string, host string) string {
 	// initiate connection
 	fmt.Println(host)
 	conn, err := net.Dial("tcp", host)
-	checkError(err)
+	lib.CheckError(err)
 	// write request information to the server
 	_, err = conn.Write([]byte(relayRequest))
-	checkError(err)
+	lib.CheckError(err)
 	// close the connection after this function executes
 	defer conn.Close()
 	// get message of at maximum 512 bytes
@@ -185,7 +179,7 @@ func handleServer(relayRequest string, host string) string {
 	// read input 
 	_, err = conn.Read(buf[0:])
 	// if there was an error exit
-	checkError(err)
+	lib.CheckError(err)
 	// convert message to string and decompose it
 	serverResponse := string(buf[0:])
 

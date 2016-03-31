@@ -8,6 +8,7 @@ import (
 	"strings"
 	"regexp"
 	"strconv"
+	"lib"
 )
 
 func main() {
@@ -21,7 +22,7 @@ func main() {
 	// determine of the input required config settings to be changed
 	if len(os.Args) > 2 {
 		// initialize config settings variables
-		config := initializeConfig()
+		config := lib.InitializeConfig()
 		connectionType := os.Args[2]
 		checkInput(config, host, connectionType)
 		os.Exit(0)
@@ -35,24 +36,24 @@ func main() {
 
 func handleRequest(method string, url string, body string, host string) {
 	// read configuration
-	config := initializeConfig()
+	config := lib.InitializeConfig()
 	// set request message
-	request := setRequestMessage(host, config, method, url, body)
+	request := lib.SetRequestMessage(host, config, method, url, body)
 	// check for proxy
-	if config.proxy != "off" {
-		host = config.proxy
+	if config.Proxy != "off" {
+		host = config.Proxy
 	}
 	// create connection
-	conn, err := net.Dial(config.protocol, host)
-	checkError(err)
+	conn, err := net.Dial(config.Protocol, host)
+	lib.CheckError(err)
 	// write request to connection
-	_, err = conn.Write(request.toBytes())
-	checkError(err)
+	_, err = conn.Write(request.ToBytes())
+	lib.CheckError(err)
 	// get message
 	var buf [4000]byte
 	// read input 
 	n, err := conn.Read(buf[0:])
-	checkError(err)
+	lib.CheckError(err)
 
 	response := string(buf[0:])
 
@@ -77,12 +78,12 @@ func handleRequest(method string, url string, body string, host string) {
 		default:
 	}
 
-	headerTemp := NewResponseMessage()
-	headerTemp.version = version
-	headerTemp.statusCode = code
-	headerTemp.phrase = status
-	headerTemp.headerLines = headers
-	headerTemp.entityBody = ""
+	headerTemp := lib.NewResponseMessage()
+	headerTemp.Version = version
+	headerTemp.StatusCode = code
+	headerTemp.Phrase = status
+	headerTemp.HeaderLines = headers
+	headerTemp.EntityBody = ""
 	headerSize := len(headerTemp.ToBytes())
 	lengthDiff := 0
 
@@ -100,7 +101,7 @@ func handleRequest(method string, url string, body string, host string) {
 			var buf [4000]byte
 			// read input 
 			n, err = conn.Read(buf[0:])
-			checkError(err)
+			lib.CheckError(err)
 			response += string(buf[0:])
 			if strings.Contains(response, "\r\n0\r\n\r\n") || n == 0 {
 					break
@@ -111,7 +112,7 @@ func handleRequest(method string, url string, body string, host string) {
 			var buf [4000]byte
 			// read input 
 			n, err = conn.Read(buf[0:])
-			checkError(err)
+			lib.CheckError(err)
 			response += string(buf[0:])
 			lengthDiff -= 4000
 		}
@@ -141,7 +142,7 @@ func writeReceivedToFile(body string, fileName string) {
 	}
 
 	err := ioutil.WriteFile("../../temp/"+fileName, []byte(body), 0644)
-	checkError(err)
+	lib.CheckError(err)
 }
 
 func getRedirectLocation(headers map[string]string) (string, string) {
@@ -159,21 +160,21 @@ func getRedirectLocation(headers map[string]string) (string, string) {
 	return strings.Replace(splitURL[0], "/", "", 2), "/" + splitURL[1]	
 }
 
-func checkInput(config configSettings, host string, connectionType string) {
+func checkInput(config lib.ConfigSettings, host string, connectionType string) {
 	switch host {
 		case "protocol": 
-			config.protocol = connectionType
+			config.Protocol = connectionType
 			break
 		case "connection": 
-			config.connection = connectionType
+			config.Connection = connectionType
 			break
 		case "proxy":
-			config.proxy = connectionType
+			config.Proxy = connectionType
 			break
 		default:
 	}
-	err := config.writeConfig()
-	checkError(err)
+	err := config.WriteConfig()
+	lib.CheckError(err)
 }
 
 func getUserInputs() (string, string, string) {
@@ -279,11 +280,4 @@ func printToConsole(response string) {
 
 	content := version + " " + code + " " + status + "\n" + allHeaders + "\n\n" + body
 	fmt.Println(content) 
-}
-
-func checkError(err error) {
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Fatal error: %s", err.Error())
-		os.Exit(1)
-	}
 }

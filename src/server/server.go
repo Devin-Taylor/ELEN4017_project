@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"time"
 	"strconv"
+	"lib"
 )
 
 const httpVersion = "HTTP/1.1"
@@ -29,7 +30,7 @@ func main() {
 func startTCPServer(service string) {
 	defer fmt.Println("closing TCP server")
 	listener, err := net.Listen("tcp", service)
-	checkError(err)
+	lib.CheckError(err)
 
 	for {
 		// make a new socket for any TCP connection that is accepted
@@ -46,7 +47,7 @@ func startTCPServer(service string) {
 func startUDPServer(service string) {
 	defer fmt.Println("closing UDP server")
 	packetConn, err := net.ListenPacket("udp", service)
-	checkError(err)
+	lib.CheckError(err)
 
 	for {
 		// handle any UDP connection
@@ -106,7 +107,7 @@ func handleTCPClient(conn net.Conn) {
 	}
 }
 
-func composeResponse(message string) *ResponseMessage{
+func composeResponse(message string) *lib.ResponseMessage{
 		// load the map describing location changes
 		locationMap := loadMovesMap()
 
@@ -114,22 +115,22 @@ func composeResponse(message string) *ResponseMessage{
 		method, url, version, headers, body := decomposeRequest(message) // maybe move this out of function
 
 		composeResponse := true
-		var response = NewResponseMessage()
-		response.version = httpVersion
+		var response = lib.NewResponseMessage()
+		response.Version = httpVersion
 
 		// set response headers		
-		response.headerLines["Server"] = "FooBar"
-		response.headerLines["Date"] = time.Now().Format(time.RFC1123Z)
-		response.headerLines["Content-Language"] = "en"
+		response.HeaderLines["Server"] = "FooBar"
+		response.HeaderLines["Date"] = time.Now().Format(time.RFC1123Z)
+		response.HeaderLines["Content-Language"] = "en"
 
 		// make sure that version is compatible with server otherwise send a 505 response
 		if version != httpVersion && composeResponse {
 			fmt.Println("505")
 			// compose 505
-			response.statusCode = "505"
-			response.phrase = "HTTP Version Not Supported"
-			response.entityBody = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n<title>505 Version Not Supported</title>\n</head>\n<body>\n<h1>Version Not Supported</h1>\n<p>Your HTTP version is not supported by this server, please use HTTP/1.1.</p>\n</body>\n</html>"
-			response.headerLines["Content-Length"] = strconv.Itoa(len([]byte(response.entityBody)))
+			response.StatusCode = "505"
+			response.Phrase = "HTTP Version Not Supported"
+			response.EntityBody = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n<title>505 Version Not Supported</title>\n</head>\n<body>\n<h1>Version Not Supported</h1>\n<p>Your HTTP version is not supported by this server, please use HTTP/1.1.</p>\n</body>\n</html>"
+			response.HeaderLines["Content-Length"] = strconv.Itoa(len([]byte(response.EntityBody)))
 			// set flag
 			composeResponse = false
 		}
@@ -138,11 +139,11 @@ func composeResponse(message string) *ResponseMessage{
 		if locationMap[url] != "" && composeResponse {
 			fmt.Println("301")
 			// compose 301
-			response.statusCode = "301"
-			response.phrase = "Moved Permanently"
-			response.headerLines["Location"] = locationMap[url]
-			response.entityBody = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n<title>301 Moved Permanently</title>\n</head>\n<body>\n<h1>Moved Permanently</h1>\n<p>The document has moved <a href=\"" + url + "\">here</a>.</p>\n</body>\n</html>"
-			response.headerLines["Content-Length"] = strconv.Itoa(len([]byte(response.entityBody)))
+			response.StatusCode = "301"
+			response.Phrase = "Moved Permanently"
+			response.HeaderLines["Location"] = locationMap[url]
+			response.EntityBody = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n<title>301 Moved Permanently</title>\n</head>\n<body>\n<h1>Moved Permanently</h1>\n<p>The document has moved <a href=\"" + url + "\">here</a>.</p>\n</body>\n</html>"
+			response.HeaderLines["Content-Length"] = strconv.Itoa(len([]byte(response.EntityBody)))
 			// set flag
 			composeResponse = false
 		}
@@ -152,10 +153,10 @@ func composeResponse(message string) *ResponseMessage{
 		if !exists && composeResponse && !(strings.ToUpper(method) == "PUT" || strings.ToUpper(method) == "POST") {
 			fmt.Println("404")
 			// compose 404
-			response.statusCode = "404"
-			response.phrase = "Not Found"
-			response.entityBody = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n<title>404 Not Found</title>\n</head>\n<body>\n<h1>Not Found</h1>\n<p>The requested URL " + url + " was not found on this server.</p>\n</body>\n</html>"
-			response.headerLines["Content-Length"] = strconv.Itoa(len([]byte(response.entityBody)))
+			response.StatusCode = "404"
+			response.Phrase = "Not Found"
+			response.EntityBody = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n<title>404 Not Found</title>\n</head>\n<body>\n<h1>Not Found</h1>\n<p>The requested URL " + url + " was not found on this server.</p>\n</body>\n</html>"
+			response.HeaderLines["Content-Length"] = strconv.Itoa(len([]byte(response.EntityBody)))
 			// set flag
 			composeResponse = false
 		}
@@ -176,8 +177,8 @@ func composeResponse(message string) *ResponseMessage{
      				if headers["If-Modified-Since"] == "" || serverTime.After(proxyTime){
 						fmt.Println("200")
 						// compose 200
-                    	response.statusCode = "200"
-						response.phrase = "OK"
+                    	response.StatusCode = "200"
+						response.Phrase = "OK"
 
 						// load html file
 						file, err := os.Open(path + url)
@@ -189,19 +190,19 @@ func composeResponse(message string) *ResponseMessage{
 						b, err := ioutil.ReadAll(file)
 						html := string(b)
 
-						response.entityBody = html	
-						response.headerLines["Content-Length"] = strconv.Itoa(len([]byte(response.entityBody)))			
+						response.EntityBody = html	
+						response.HeaderLines["Content-Length"] = strconv.Itoa(len([]byte(response.EntityBody)))			
      				
      					// add last modified header
-						response.headerLines["Last-Modified"] = serverTime.Format(time.RFC1123Z)
+						response.HeaderLines["Last-Modified"] = serverTime.Format(time.RFC1123Z)
      				} else {
      					fmt.Println("304")
 						// compose 304
-                    	response.statusCode = "304"
-						response.phrase = "Not Modified"
+                    	response.StatusCode = "304"
+						response.Phrase = "Not Modified"
 
-						response.entityBody = ""
-						response.headerLines["Content-Length"] = strconv.Itoa(len([]byte(response.entityBody)))
+						response.EntityBody = ""
+						response.HeaderLines["Content-Length"] = strconv.Itoa(len([]byte(response.EntityBody)))
      				}
 
 					
@@ -212,15 +213,15 @@ func composeResponse(message string) *ResponseMessage{
 				case "HEAD":
 					fmt.Println("200")
 					// compose 200
-                    response.statusCode = "200"
-					response.phrase = "OK"
+                    response.StatusCode = "200"
+					response.Phrase = "OK"
 
 					// get last modified time
      				stat, err := os.Stat(path + url)
      				if err != nil {
         				fmt.Println(err)
      				}
-     				response.headerLines["Content-Length"] = strconv.FormatInt(stat.Size(),10)
+     				response.HeaderLines["Content-Length"] = strconv.FormatInt(stat.Size(),10)
 
 					// set flag
 					composeResponse = false
@@ -228,16 +229,16 @@ func composeResponse(message string) *ResponseMessage{
 				case "PUT":
 					fmt.Println("200")
 					// compose 200
-                    response.statusCode = "200"
-					response.phrase = "OK"
+                    response.StatusCode = "200"
+					response.Phrase = "OK"
 
 					// convert the html to bytes and write to file
 					data := []byte(body)
 					err := ioutil.WriteFile(path + url, data, 0644)
-					checkError(err)
+					lib.CheckError(err)
 
-					response.entityBody = "<html>\n<body>\n<h1>The file was created.</h1>\n</body>\n</html>"
-					response.headerLines["Content-Length"] = strconv.Itoa(len([]byte(response.entityBody)))
+					response.EntityBody = "<html>\n<body>\n<h1>The file was created.</h1>\n</body>\n</html>"
+					response.HeaderLines["Content-Length"] = strconv.Itoa(len([]byte(response.EntityBody)))
 
 					// set flag
 					composeResponse = false
@@ -245,15 +246,15 @@ func composeResponse(message string) *ResponseMessage{
 				case "DELETE":
 					fmt.Println("200")
 					// compose 200
-					response.statusCode = "200"
-					response.phrase = "OK"
+					response.StatusCode = "200"
+					response.Phrase = "OK"
 
 					// delete the file
 					err := os.RemoveAll(path + url)
-					checkError(err)
+					lib.CheckError(err)
 
-					response.entityBody = "<html>\n<body>\n<h1>URL deleted.</h1>\n</body>\n</html>"
-					response.headerLines["Content-Length"] = strconv.Itoa(len([]byte(response.entityBody)))
+					response.EntityBody = "<html>\n<body>\n<h1>URL deleted.</h1>\n</body>\n</html>"
+					response.HeaderLines["Content-Length"] = strconv.Itoa(len([]byte(response.EntityBody)))
 
 					//set flag
 					composeResponse = false
@@ -261,16 +262,16 @@ func composeResponse(message string) *ResponseMessage{
 				case "POST":
 					fmt.Println("200")
 					// compose 200
-                    response.statusCode = "200"
-					response.phrase = "OK"
+                    response.StatusCode = "200"
+					response.Phrase = "OK"
 
 					// write to file
 					data := []byte(body)
 					err := ioutil.WriteFile(path + url, data, 0644)
-					checkError(err)
+					lib.CheckError(err)
 
-					response.entityBody = "<html>\n<body>\n<h1>Request Processed Successfully.</h1>\n</body>\n</html>"
-					response.headerLines["Content-Length"] = strconv.Itoa(len([]byte(response.entityBody)))
+					response.EntityBody = "<html>\n<body>\n<h1>Request Processed Successfully.</h1>\n</body>\n</html>"
+					response.HeaderLines["Content-Length"] = strconv.Itoa(len([]byte(response.EntityBody)))
 
 					// set flag
 					composeResponse = false
@@ -278,10 +279,10 @@ func composeResponse(message string) *ResponseMessage{
 				default:
 					fmt.Println("400")
 					// compose 400
-					response.statusCode = "400"
-					response.phrase = "Bad Request"
-					response.entityBody = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n<title>400 Bad Request</title>\n</head>\n<body>\n<h1>Bad Request</h1>\n<p>Your browser sent a request that this server could not understand.</p>\n<p>The request line contained invalid characters following the protocol string.</p>\n</body>\n</html>"
-					response.headerLines["Content-Length"] = strconv.Itoa(len([]byte(response.entityBody)))
+					response.StatusCode = "400"
+					response.Phrase = "Bad Request"
+					response.EntityBody = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n<title>400 Bad Request</title>\n</head>\n<body>\n<h1>Bad Request</h1>\n<p>Your browser sent a request that this server could not understand.</p>\n<p>The request line contained invalid characters following the protocol string.</p>\n</body>\n</html>"
+					response.HeaderLines["Content-Length"] = strconv.Itoa(len([]byte(response.EntityBody)))
 					// set flag
 					composeResponse = false
 
@@ -308,8 +309,8 @@ func decomposeRequest(request string) (string, string, string, map[string]string
 				break
 			}
 		}
-		headerLines := temp[1:i]
-		for _, value := range headerLines {
+		HeaderLines := temp[1:i]
+		for _, value := range HeaderLines {
 			
 			line := strings.SplitN(value, ":"+sp, 2)
 
@@ -331,12 +332,6 @@ func decomposeRequest(request string) (string, string, string, map[string]string
 
 		return method, url, version, headers, body
 
-}
-
-func checkError(err error) {
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %s", err.Error())
-	}
 }
 
 func fileExists(path string) (bool, error) {

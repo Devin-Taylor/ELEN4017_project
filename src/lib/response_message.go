@@ -1,15 +1,15 @@
-package main
+package lib
 
 type ResponseMessage struct{
-	version string
-	statusCode string
-	phrase string
-	headerLines map[string]string
-	entityBody string
+	Version string
+	StatusCode string
+	Phrase string
+	HeaderLines map[string]string
+	EntityBody string
 }
 
 func NewResponseMessage() *ResponseMessage {
-    return &ResponseMessage{headerLines: make(map[string]string)}
+    return &ResponseMessage{HeaderLines: make(map[string]string)}
 }
 
 // Function to convert the HTTP Response to a string in the correct format
@@ -17,16 +17,16 @@ func (rm *ResponseMessage) ToString() string {
 	const sp = "\x20"
 	const lf = "\x0a"
 	const cr = "\x0d"
-	responseString := rm.version + sp
-	responseString += rm.statusCode + sp
-	responseString += rm.phrase + cr + lf
+	responseString := rm.Version + sp
+	responseString += rm.StatusCode + sp
+	responseString += rm.Phrase + cr + lf
 	//add header lines
-	for headerFieldName, value := range rm.headerLines {
+	for headerFieldName, value := range rm.HeaderLines {
 		responseString += headerFieldName + ":" + sp
 		responseString += value + cr + lf
 	}
 	responseString += cr + lf
-	responseString += rm.entityBody
+	responseString += rm.EntityBody
 	return responseString
 }
 
