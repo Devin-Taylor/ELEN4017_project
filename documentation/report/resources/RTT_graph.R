@@ -2,7 +2,7 @@ library(ggplot2)
 library(stringr)
 library(dplyr)
 
-sampleData <- read.table("../timer_map.txt")
+sampleData <- read.table("../../timer_map.txt")
 
 names(sampleData) <- c("Time", "Protocol", "Connection", "Proxy")
 sampleData$Proxy <- as.character(sampleData$Proxy)
