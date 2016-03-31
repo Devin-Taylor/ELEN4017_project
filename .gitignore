@@ -25,3 +25,9 @@ _testmain.go
 *.exe
 *.test
 *.prof
+
+# latex stuff
+*.log
+*.aux
+*.out
+*.pdf
