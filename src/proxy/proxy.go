@@ -7,6 +7,7 @@ import (
 	"os"
 	"io/ioutil"
 	"lib"
+	"strconv"
 )
 
 func main() {
@@ -15,29 +16,19 @@ func main() {
 	listener, err := net.Listen("tcp", service)
 	//packetConn, err := net.ListenPacket("udp", service)
 	lib.CheckError(err)
-	// initialize map
-	innerMap := make(map[string]string)
-	urlMap := make(map[string]map[string]string)
-	// initialize channel to allow multiple threads to communicate between each other
-	channel := make(chan [3]string)
 
 	for {
 	conn, err := listener.Accept()
 	if err != nil {
 		continue
 	}
-	go  handleClient(conn, channel)
-	// read from channel and assign array to temporary array
-	returnArray  := <- channel
-	// add mapping values to the map
-	innerMap[returnArray[0]] = returnArray[2]
-	urlMap[returnArray[1]] = innerMap
+	go  handleClient(conn)
 	}
 }
 
-func handleClient(conn net.Conn, channel chan [3]string) {
+func handleClient(conn net.Conn) {
 
-	// defer conn.Close()
+	defer conn.Close()
 
 	// get message of at maximum 512 bytes
 	var buf [1024]byte
@@ -49,19 +40,23 @@ func handleClient(conn net.Conn, channel chan [3]string) {
 			return
 		}
 		// convert message to string and decompose it
-		message := string(buf[0:])
-	
+	message := string(buf[0:])
 	method, url, version, headers, body := decomposeRequest(message)
 	// get the host ID
-	host := mapRequest(url, headers, channel, conn.RemoteAddr().String(), method)
-
+	var host string
+	// find the hosts address
+	for key, value := range headers {
+		if(strings.ToUpper(key) == "HOST"){
+			host = value
+			break
+		}
+	}
 	isInCache, lastModified, locationMap := checkInCache(url, strings.Split(host, ":")[0])
 
 	if isInCache {
 		headers = modifyHeaders(lastModified, headers)
 		message = compileNewRequest(method, url, version, headers, body)
 	}
-
 	// strings.Split(host, ":")[0]
 
 	// get the response message from the server
@@ -102,14 +97,19 @@ func getNewResponse(serverResponse string, host string, url string) (bool, *lib.
 		return false, response, ""
 	} 
 
+	StopIndex := strings.LastIndex(url, "/")
+	newUrl := url[StopIndex:len(url)]
+
+	host = host + url[0:StopIndex]
+
 	if code == "200" {
 
 		exists, _ := fileExists("../../cache/"+host)
 		if !exists {
-			os.Mkdir("../../cache/"+host, 0777)
+			os.MkdirAll("../../cache/"+host, 0777)
 		}
 
-		ioutil.WriteFile("../../cache/"+host+url, []byte(body), 0777)
+		ioutil.WriteFile("../../cache/"+host+newUrl, []byte(body), 0777)
 
 		var response = lib.NewResponseMessage()
 		response.Version = version
@@ -166,7 +166,6 @@ func compileNewRequest(method string, url string, version string, headers map[st
 
 func handleServer(relayRequest string, host string) string {
 	// initiate connection
-	fmt.Println(host)
 	conn, err := net.Dial("tcp", host)
 	lib.CheckError(err)
 	// write request information to the server
@@ -174,16 +173,55 @@ func handleServer(relayRequest string, host string) string {
 	lib.CheckError(err)
 	// close the connection after this function executes
 	defer conn.Close()
-	// get message of at maximum 512 bytes
-	var buf [8192]byte
-	// read input 
-	_, err = conn.Read(buf[0:])
-	// if there was an error exit
-	lib.CheckError(err)
-	// convert message to string and decompose it
-	serverResponse := string(buf[0:])
 
-	return serverResponse
+	var buf [65000]byte
+	n, err := conn.Read(buf[0:])
+	lib.CheckError(err)
+
+	response := string(buf[0:n])
+	version, code, status, headers, _ := decomposeResponse(response)
+
+	headerTemp := lib.NewResponseMessage()
+	headerTemp.Version = version
+	headerTemp.StatusCode = code
+	headerTemp.Phrase = status
+	headerTemp.HeaderLines = headers
+	headerTemp.EntityBody = ""
+	headerSize := len(headerTemp.ToBytes())
+	lengthDiff := 0
+
+	contentLen, err := strconv.Atoi(headers["Content-Length"])
+	if err == nil {
+		lengthDiff = contentLen + headerSize - 65000
+	} else {
+		lengthDiff = -1
+	}
+	if strings.ToUpper(headers["Transfer-Encoding"]) == "CHUNKED" {
+
+		for {
+			// get message
+			var buf [65000]byte
+			// read input 
+			n, err = conn.Read(buf[0:])
+			lib.CheckError(err)
+			response += string(buf[0:n])
+			if strings.Contains(response, "\r\n0\r\n\r\n") || n == 0 {
+					break
+			}
+		}
+	} else {
+		for lengthDiff > 0 {
+			var buf [65000]byte
+			// read input 
+			n, err = conn.Read(buf[0:])
+			lib.CheckError(err)
+			response += string(buf[0:n])
+			lengthDiff -= 65000
+		}
+		
+	}
+
+	return response
 }
 
 func decomposeRequest(request string) (string, string, string, map[string]string, string){
@@ -226,27 +264,6 @@ func decomposeRequest(request string) (string, string, string, map[string]string
 
 		return method, url, version, headers, body
 
-}
-
-func mapRequest(url string, headers map[string]string, channel chan [3]string, clientAddress string, method string) string {
-
-	var tempMap [3]string
-	var host string
-	// find the hosts address
-	for key, value := range headers {
-		if(strings.ToUpper(key) == "HOST"){
-			host = value
-			break
-		}
-	}
-	// create host name and url as a single item
-	tempMap[0] = host + url
-	// add clients address to the array
-	tempMap[1] = clientAddress
-	tempMap[2] = method
-	// push the map values into the channel
-	channel <- tempMap
-	return host
 }
 
 func decomposeResponse(response string) (string, string, string, map[string]string, string){

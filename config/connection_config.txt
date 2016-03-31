@@ -1,3 +1,0 @@
-tcp
-keep-alive
-on

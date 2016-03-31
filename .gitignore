@@ -9,6 +9,8 @@
 _obj
 _test
 temp
+cache
+config/connection_config.txt
 
 # Architecture specific extensions/prefixes
 *.[568vq]
