@@ -19,6 +19,12 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Usage: %s host:port  message", os.Args[0])
 		os.Exit(1)
 	}
+	// check if user wants to print config settings
+	if strings.ToUpper(host) == "PRINT-CONFIG" {
+		config := lib.InitializeConfig()
+		fmt.Println(config)
+		os.Exit(0)
+	}
 	// determine of the input required config settings to be changed
 	if len(os.Args) > 2 {
 		// initialize config settings variables
@@ -35,8 +41,14 @@ func main() {
 	if strings.ToUpper(config.Protocol) == "UDP" {
 		config.Connection = "close"
 	}
-
+	// timer := newRoundTripTimer()
+	// timer.loadTimerMap("../../documentation/timer_map.txt")
+	// timer.startTimer()
 	handleRequest(method, url, body, host)
+	// timer.stopTimer()
+	// timer.addToTimer(config.Protocol + " " + config.Connection + " " + config.Proxy)
+	// timer.writeTimerToFile("../../documentation/timer_map.txt")
+	// fmt.Println(config.Protocol + " " + config.Connection + " " + config.Proxy)
 }
 
 func handleRequest(method string, url string, body string, host string) {
@@ -150,10 +162,8 @@ func handleRequest(method string, url string, body string, host string) {
 			}
 			ip,_ := net.ResolveIPAddr("ip", host)
 			if config.Connection != "keep-alive" || ip.String() != strings.Split(conn.LocalAddr().String(),":")[0] {
-				fmt.Println("HERE")
 				handleRequest("GET", url, "", host+port)
 			} else {
-				fmt.Println("OH NO")
 				url = url
 				host = host+port
 				body = ""

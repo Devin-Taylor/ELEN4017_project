@@ -1,2 +1,5 @@
-tcp close off 495.317916ms
-tcp Keep-Alive off 4m22.283096642s
+1.950029ms udp close off
+2.989975ms tcp close localhost:1236
+2.769956ms tcp keep-alive localhost:1236
+2.192469ms tcp close off
+1.933801ms tcp keep-alive off
