@@ -4,14 +4,13 @@
 
 \usepackage{KJN}
 
+\usepackage{verbatim}
 
 \pagestyle{plain}
 
 \addtolength{\oddsidemargin}{-.2in}
 \addtolength{\evensidemargin}{-.2in}
 \addtolength{\textwidth}{0.4in}
-
-
 
 % PDF Info
 \ifpdf
@@ -25,7 +24,7 @@
 \begin{document}
 
 
-\title{Implemetation of the HTTP Protocol \\ ELEN4017 Project Report}
+\title{Implementation of the HTTP Protocol in Go \\ ELEN4017 Project Report}
 
 \author{James Allingham (672732) and Devin Taylor (603956)}
 \thanks{School of Electrical \& Information Engineering, University of the
@@ -46,10 +45,91 @@ Witwatersrand, Private Bag 3, 2050, Johannesburg, South Africa}
 \section{INTRODUCTION}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{SYSTEM DESCRIPTION}
+\section{BACKGROUND}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{HTTP PROTOCOL DESCRIPTION}
+\section{HTTP DESCRIPTION}
+
+The Hyper Text Transfer Protocol has been in existence since 1990 \cite{rfc7230}. It is used by the World Wide Web as an application level protocol for transfer of information in a distributed system. It consists of two programs: a client and a server. The client, also commonly referred to as the browser, communicates with the server by sending it a HTTP request message. The server then responds with a HTTP response message. HTTP is a stateless protocol which means that the server has no knowledge of the client other than the information contained in the request. This is a limitation of HTTP which is overcome with the use of cookies \cite{kurose}. HTTP uses Transmission Control Protocol (TCP) as its underlying transport layer protocol \cite{kurose}. This means that HTTP does not need to worry about reliable data transfer issues such as out of sequence packets or packet loss.  
+
+A typical HTTP communication can be described as follows: 
+\begin{enumerate}
+	\item A server sets up a TCP listener on one of its ports (an end point for network communication). The default port to HTTP is 80. 
+	\item A client initiates a TCP connection with the server (via the server's url) on the appropriate port. 
+	\item The client and server complete a `three way handshake' after which each of them have a socket (a virtual data connection between processes) which can be used to send and receive messages. Note that the port associated with these sockets will not be 80.
+	\item The client sends a HTTP request message to the server using its socket. This request is received by the server on its matching socket.
+	\item The server processes the request and sends an appropriate HTTP response to the client. This communication once again makes use of the sockets that have been set up. 
+	\item The server closes the TCP connection.
+	\item The client receives the HTTP response before the connection is closed.
+\end{enumerate}
+
+	\subsection{Request and Response Messages}
+
+	HTTP is based on communication via request and response messages, both of which have specific formats and can take on a number of values. Both request and response messages contain three parts: the request/ response line, zero or more header lines and an optional body. The format of an HTTP request is shown in \figref{reqformat}. A number of common HTTP request methods are described in \tabref{httpreqs}. The format of an HTTP response is shown in \figref{respformat}. A number of common HTTP response codes are described in \tabref{httpresps}. 2xx responses indicate a success, 3xx responses indicate that client must submit a new request, 4xx responses indicate that the client is in error and 5xx responses indicate that the server is in error.
+
+	\begin{table}[htbp]
+	\centering
+	\caption{Commonly used HTTP request methods}
+	\label{httpreqs}
+	\begin{tabular}{p{0.08\textwidth}|p{0.36\textwidth}}
+	\hline
+	\textbf{Method} & \textbf{Description} \\ \hline
+	GET & Request data from the specified URL \\
+	HEAD & Request a response identical to the GET response but without the body so that the client can get the header values without retrieving the entire data \\
+	POST & Request that the web server accept the data in body, this is often used for filling in forms\\
+	PUT & Request that the web server store the data in the body at the specified URL \\
+	DELETE & Request that the web server remove the resource stored at the specified URL  \\
+	TRACE & Request that the web server echo the request so that the client can detect any changes made to the original request \\
+	OPTIONS & Request that the web server inform the client which methods are valid at the specified URL \\
+	PATCH & Request that the web server apply a partial change to the resource at the given URL \\
+	\hline
+	\end{tabular}
+	\end{table}
+
+	\begin{table}[htbp]
+	\centering
+	\caption{Commonly used HTTP response methods}
+	\label{httpresps}
+	\begin{tabular}{p{0.06\textwidth}|p{0.14\textwidth}|p{0.22\textwidth}}
+	\hline
+	\textbf{Code} & \textbf{Phrase} & \textbf{Meaning} \\ \hline
+	200 & OK & HTTP request successful \\
+	201 & Created & A new resource was created \\
+	202 & Accepted & Request has been accepted for processing \\
+	301 & Moved Permanently & The requested resource is now located elsewhere \\
+	302 & Found & The requested resource is temporarily located elsewhere \\
+	304 & Not Modified & The requested resource has not been modified since last requested - used for caching \\
+	400 & Bad Request & The request was not understood by the server \\
+	404 & Not Found & The requested resource could not be found \\
+	505 & HTTP Version Not Supported & The server does not support the HTTP version of the request \\
+	\hline
+	\end{tabular}
+	\end{table}
+
+	\subsection{Persistent and Non-persistent}
+
+	In HTTP version 1.0 (HTTP/1.0), all communication takes the form shown above \cite{rfc1945}. In other words a new TCP connection is made every time the client wants to make a request to the server. However, this approach has its disadvantages. The primary disadvantage is that it is wasteful to repeatedly make new connections when more than one request is going to be made. This is because setting up the TCP connection requires the three way handshake which is a time consuming operation. The solution to this, which was implemented in HTTP version 1.1 (HTTP/1.1), was to allow connections to persist for multiple request-response pairs \cite{rfc7230}. This is accomplished using the \emph{connection} header field, which can take on the values \emph{close} and \emph{keep-alive} for non-persistent and persistent connections respectively.
+
+	\subsection{Proxy Servers and Caching}
+
+	Another limitation of HTTP that results from its statelessness is that it does not have a mechanism for `smart' communication. Consider the following situation:
+
+	\begin{enumerate}
+		\item A client requests the file \verb|Foo.bar|.
+		\item The server responds by sending the file to the client by encapsulating it withing an HTTP response message.
+		\item The same client receives the file and immediately requests the same file, \verb|Foo.bar|, again.
+		\item The server responds by sending the exact same file to the client again.
+	\end{enumerate} 
+
+	The problem with the above situation is that the server is wasting time sending the client the file \verb|Foo.bar| again because no changes have been made to the file. As a result the server could be slower to respond to other clients. This also increases congestion on the uplink of the Local Area Network of the client. The solution is to make use of a Proxy server, also known as a web cache. In this situation all HTTP requests are sent to the proxy by default. The proxy then forwards requests to the destination servers. The proxy acting as an intermediary between the clients and server can now store files sent from a server to a client. Now when a client requests the same file in quick succession, the server need only send it once. This solves both problems: the server has a reduced load and the uplink traffic is also reduced. Additionally, because LANs usually have network speeds orders of magnitude larger than the uplink, the client gets the data faster. By making use of the \emph{Last-Modified} and \emph{If-Modified-Since} headers, the proxy can make sure that it always serves the client with the most up to date version of the requested file. This is accomplished with the \emph{Conditional-Get} request. 	
+
+	\subsection{User Datagram Protocol}
+
+	Although HTTP makes use of TCP as it's transport layer protocol, a HTTP-like communication system can be implemented with the User Datagram Protocol (UDP). This would have the disadvantage that it provides unreliable communication. However, it could be faster than if TCP were used.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{SYSTEM DESCRIPTION}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{DETAILED IMPLEMENTATION}
@@ -72,26 +152,19 @@ Witwatersrand, Private Bag 3, 2050, Johannesburg, South Africa}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
 \begin{thebibliography}{1}
 
+\bibitem{rfc7230} Fielding R, Reschke J. `Hypertext Transfer Protocol (HTTP/1.1): Message Syntax and Routing.' IETF, RFC June 2014. [online] Available: \url{https://tools.ietf.org/html/rfc7230}
+
+\bibitem{kurose} Kurose, J F, Ross K W (2013). \emph{Computer networking: a top-down approach.} Boston, Pearson. pp 83 - 115.
+
+\bibitem{rfc1945} Berners-Lee T, Fielding R, Frystyk H. `Hypertext Transfer Protocol -- HTTP/1.0' IETF, RFC May 1996. [online] Available: \url{https://tools.ietf.org/html/rfc1945}
+
 \end{thebibliography}
-
-
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \clearpage
 \onecolumn
 \appendix
 
-
-
-
-
 \end{document}
-
-" vim: ts=4
-" vim: tw=78
-" vim: autoindent
-" vim: shiftwidth=4
