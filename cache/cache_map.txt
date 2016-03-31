@@ -1,2 +1,7 @@
+<<<<<<< HEAD
 localhost/index.html Tue, 29 Mar 2016 15:33:56 +0200
 localhost/test1.jpg Sun, 27 Mar 2016 15:09:35 +0200
+=======
+localhost/index.html Sun, 27 Mar 2016 21:08:24 +0200
+localhost/test1.jpg Thu, 31 Mar 2016 09:33:36 +0200
+>>>>>>> f3f3f702c14d3cfb115c898027bcb0f6945062db
