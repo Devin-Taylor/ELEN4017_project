@@ -29,15 +29,18 @@ func main() {
 	// get the user to input the method to be used as well as the file/url requested
 	method, url, body := getUserInputs()
 
-	handleRequest(method, url, body, host)
+	config := initializeConfig()
 
+	if strings.ToUpper(config.protocol) == "UDP" {
+		config.connection = "close"
+	}
+
+	handleRequest(method, url, body, host)
 }
 
 func handleRequest(method string, url string, body string, host string) {
 	// read configuration
 	config := initializeConfig()
-	// set request message
-	request := setRequestMessage(host, config, method, url, body)
 	// check for proxy
 	if config.proxy != "off" {
 		host = config.proxy
@@ -45,18 +48,24 @@ func handleRequest(method string, url string, body string, host string) {
 	// create connection
 	conn, err := net.Dial(config.protocol, host)
 	checkError(err)
+	defer conn.Close()
+
+	keepAlive:
+	// set request message
+	request := setRequestMessage(host, config, method, url, body)
 	// write request to connection
 	_, err = conn.Write(request.toBytes())
 	checkError(err)
 	// get message
-	var buf [4000]byte
+	var buf [65000]byte
 	// read input 
 	n, err := conn.Read(buf[0:])
 	checkError(err)
 
-	response := string(buf[0:])
-
+	response := string(buf[0:n])
 	version, code, status, headers, _ := decomposeResponse(response)
+
+	var port string
 
 	switch code {
 		case "503":	
@@ -64,8 +73,12 @@ func handleRequest(method string, url string, body string, host string) {
 			return
 		case "301","302":
 			newHost, newUrl := getRedirectLocation(headers)
-			newHost += ":80"
-			fmt.Println(newHost, host, newUrl, url)
+			if newHost == "localhost" {
+				port = ":1235"
+			} else {
+				port = ":80"
+			}
+			newHost += port
 			if newHost == "" && newUrl == "" {
 				break
 			}
@@ -88,32 +101,31 @@ func handleRequest(method string, url string, body string, host string) {
 
 	contentLen, err := strconv.Atoi(headers["Content-Length"])
 	if err == nil {
-		lengthDiff = contentLen + headerSize - 4000
+		lengthDiff = contentLen + headerSize - 65000
 	} else {
 		lengthDiff = -1
 	}
-
 	if strings.ToUpper(headers["Transfer-Encoding"]) == "CHUNKED" {
 
 		for {
 			// get message
-			var buf [4000]byte
+			var buf [65000]byte
 			// read input 
 			n, err = conn.Read(buf[0:])
 			checkError(err)
-			response += string(buf[0:])
+			response += string(buf[0:n])
 			if strings.Contains(response, "\r\n0\r\n\r\n") || n == 0 {
 					break
 			}
 		}
 	} else {
 		for lengthDiff > 0 {
-			var buf [4000]byte
+			var buf [65000]byte
 			// read input 
 			n, err = conn.Read(buf[0:])
 			checkError(err)
-			response += string(buf[0:])
-			lengthDiff -= 4000
+			response += string(buf[0:n])
+			lengthDiff -= 65000
 		}
 		
 	}
@@ -126,10 +138,24 @@ func handleRequest(method string, url string, body string, host string) {
 	if strings.Contains(body, "src=\"") {
 
 		sourceMap := retrieveSources(body)
-		fmt.Println(sourceMap)
 
-		for host, url := range sourceMap {
-			handleRequest("GET", url, "", host+":80")
+		for host, url = range sourceMap {
+			if host == "localhost" {
+				port = ":1235"
+			} else {
+				port = ":80"
+			}
+			ip,_ := net.ResolveIPAddr("ip", host)
+			if config.connection != "keep-alive" || ip.String() != strings.Split(conn.LocalAddr().String(),":")[0] {
+				fmt.Println("HERE")
+				handleRequest("GET", url, "", host+port)
+			} else {
+				fmt.Println("OH NO")
+				url = url
+				host = host+port
+				body = ""
+				goto keepAlive
+			}
 		}
 	}
 }

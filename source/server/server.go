@@ -39,6 +39,7 @@ func startTCPServer(service string) {
 		}
 
 		// handle the TCP connection
+		fmt.Println("New connection for ", conn.RemoteAddr())
 		go  handleTCPClient(conn)
 	}
 }
@@ -91,7 +92,6 @@ func handleTCPClient(conn net.Conn) {
 		if err != nil {
 			return
 		}
-		fmt.Println("New connection for ", conn.RemoteAddr())
 
 		// convert message to string
 		message := string(buf[0:])		
