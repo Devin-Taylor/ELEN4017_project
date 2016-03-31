@@ -1,3 +1,5 @@
+// Author: James Allingham
+
 package lib
 
 import (

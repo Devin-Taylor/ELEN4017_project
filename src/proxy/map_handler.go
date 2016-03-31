@@ -1,4 +1,6 @@
-package main // for you Devin
+// Author: Devin Taylor
+
+package main
 
 import (
 	"os"

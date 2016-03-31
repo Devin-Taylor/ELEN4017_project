@@ -1,3 +1,5 @@
+// Author: Devin Taylor
+
 package main
 
 import (
@@ -79,7 +81,7 @@ func handleRequest(method string, url string, body string, host string) {
 	lib.CheckError(err)
 
 	response := string(buf[0:n])
-	version, code, status, headers, _ := decomposeResponse(response)
+	version, code, status, headers, _ := lib.DecomposeResponse(response)
 	var port string
 
 	switch code {
@@ -145,7 +147,7 @@ func handleRequest(method string, url string, body string, host string) {
 		
 	}
 
-	_, _, _, _, body = decomposeResponse(response)
+	_, _, _, _, body = lib.DecomposeResponse(response)
 
 	writeReceivedToFile(body, getFileName(url))
 	printToConsole(response)
@@ -237,46 +239,6 @@ func getUserInputs() (string, string, string) {
     return method, url, entityBody
 }
 
-func decomposeResponse(response string) (string, string, string, map[string]string, string){
-		const sp = "\x20"
-		const cr = "\x0d"
-		const lf = "\x0a"
-		headers := make(map[string]string)
-
-		temp := strings.Split(response, cr + lf)
-		// get the request line for further processing
-		responseLine := temp[0]
-		// get the header lines 
-		// find out where the header lines end
-		var i int
-		for i = 1; i < len(temp); i++ {
-			if temp[i] == "" {
-				break
-			}
-		}
-		headerLines := temp[1:i]
-		for _, value := range headerLines {
-			line := strings.SplitN(value, ":"+sp, 2)
-			headers[line[0]] = line[1]
-		}
-		//check if there is any content in the body
-		var bodyLines []string
-		if i  < len(temp) {
-			// get the body content
-			bodyLines = temp[i+1:len(temp)]
-		}
-		body := strings.Join(bodyLines, cr + lf)
-
-		// split the response line into it's components
-		responses := strings.SplitN(responseLine, sp, 3)
-		status := responses[2]
-		code := responses[1]
-		version := responses[0]
-
-		return version, code, status, headers, body
-
-}
-
 func getFileName(value string) string {
 	StopIndex := strings.LastIndex(value, "/")
 	fileName := value[StopIndex:len(value)]
@@ -308,7 +270,7 @@ func retrieveSources(body string) map[string]string {
 
 func printToConsole(response string) {
 
-	version, code, status, headers, body := decomposeResponse(response)
+	version, code, status, headers, body := lib.DecomposeResponse(response)
 
 	var allHeaders string
 

@@ -1,3 +1,5 @@
+// Author: Devin Taylor
+
 package main
 
 import (

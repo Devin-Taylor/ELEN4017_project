@@ -1,3 +1,5 @@
+// Author: Devin Taylor and James Allingham
+
 package main
 
 import (
@@ -41,7 +43,7 @@ func handleClient(conn net.Conn) {
 		}
 		// convert message to string and decompose it
 	message := string(buf[0:])
-	method, url, version, headers, body := decomposeRequest(message)
+	method, url, version, headers, body := lib.DecomposeRequest(message)
 	// get the host ID
 	var host string
 	// find the hosts address
@@ -76,7 +78,7 @@ func handleClient(conn net.Conn) {
 }
 
 func getNewResponse(serverResponse string, host string, url string) (bool, *lib.ResponseMessage, string) {
-	version, code, status, headers, body := decomposeResponse(serverResponse)
+	version, code, status, headers, body := lib.DecomposeResponse(serverResponse)
 
 	fmt.Println(code)
 
@@ -104,7 +106,7 @@ func getNewResponse(serverResponse string, host string, url string) (bool, *lib.
 
 	if code == "200" {
 
-		exists, _ := fileExists("../../cache/"+host)
+		exists, _ := lib.FileExists("../../cache/"+host)
 		if !exists {
 			os.MkdirAll("../../cache/"+host, 0777)
 		}
@@ -179,7 +181,7 @@ func handleServer(relayRequest string, host string) string {
 	lib.CheckError(err)
 
 	response := string(buf[0:n])
-	version, code, status, headers, _ := decomposeResponse(response)
+	version, code, status, headers, _ := lib.DecomposeResponse(response)
 
 	headerTemp := lib.NewResponseMessage()
 	headerTemp.Version = version
@@ -222,93 +224,4 @@ func handleServer(relayRequest string, host string) string {
 	}
 
 	return response
-}
-
-func decomposeRequest(request string) (string, string, string, map[string]string, string){
-		const sp = "\x20"
-		const cr = "\x0d"
-		const lf = "\x0a"
-		headers := make(map[string]string)
-
-		temp := strings.Split(request, cr + lf)
-		// get the request line for further processing
-		requestLine := temp[0]
-		// get the header lines 
-		// find out where the header lines end
-		var i int
-		for i = 1; i < len(temp); i++ {
-			if temp[i] == "" {
-				break
-			}
-		}
-		headerLines := temp[1:i]
-		for _, value := range headerLines {
-			
-			line := strings.SplitN(value, ":"+" ", 2)
-			
-			headers[line[0]] = line[1]
-		}
-		//check if there is any content in the body
-		var bodyLines []string
-		if i  < len(temp) {
-			// get the body content
-			bodyLines = temp[i+1:len(temp)]
-		}
-		body := strings.Join(bodyLines, cr + lf)
-
-		// split the request line into it's components
-		requests := strings.Split(requestLine, sp)
-		method := requests[0]
-		url := requests[1]
-		version := requests[2]
-
-		return method, url, version, headers, body
-
-}
-
-func decomposeResponse(response string) (string, string, string, map[string]string, string){
-		const sp = "\x20"
-		const cr = "\x0d"
-		const lf = "\x0a"
-		headers := make(map[string]string)
-
-		temp := strings.Split(response, cr + lf)
-		// get the request line for further processing
-		responseLine := temp[0]
-		// get the header lines 
-		// find out where the header lines end
-		var i int
-		for i = 1; i < len(temp); i++ {
-			if temp[i] == "" {
-				break
-			}
-		}
-		headerLines := temp[1:i]
-		for _, value := range headerLines {
-			line := strings.SplitN(value, ":"+sp, 2)
-			headers[line[0]] = line[1]
-		}
-		//check if there is any content in the body
-		var bodyLines []string
-		if i  < len(temp) {
-			// get the body content
-			bodyLines = temp[i+1:len(temp)]
-		}
-		body := strings.Join(bodyLines, cr + lf)
-
-		// split the response line into it's components
-		responses := strings.Split(responseLine, sp)
-		status := responses[2]
-		code := responses[1]
-		version := responses[0]
-
-		return version, code, status, headers, body
-
-}
-
-func fileExists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err == nil { return true, nil }
-	if os.IsNotExist(err) { return false, nil }
-	return true, err
 }

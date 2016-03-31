@@ -1,3 +1,5 @@
+// Author: James Allingham
+
 package main
 
 import (
@@ -112,7 +114,7 @@ func composeResponse(message string) *lib.ResponseMessage{
 		locationMap := loadMovesMap()
 
 		// decompose message
-		method, url, version, headers, body := decomposeRequest(message) // maybe move this out of function
+		method, url, version, headers, body := lib.DecomposeRequest(message) // maybe move this out of function
 
 		composeResponse := true
 		var response = lib.NewResponseMessage()
@@ -149,7 +151,7 @@ func composeResponse(message string) *lib.ResponseMessage{
 		}
 
 		// check if url is valid 
-		exists, _ := fileExists(path + url)
+		exists, _ := lib.FileExists(path + url)
 		if !exists && composeResponse && !(strings.ToUpper(method) == "PUT" || strings.ToUpper(method) == "POST") {
 			fmt.Println("404")
 			// compose 404
@@ -290,55 +292,6 @@ func composeResponse(message string) *lib.ResponseMessage{
 		}
 
 		return response
-}
-
-func decomposeRequest(request string) (string, string, string, map[string]string, string){
-		const sp = "\x20"
-		const cr = "\x0d"
-		const lf = "\x0a"
-		headers := make(map[string]string)
-
-		temp := strings.Split(request, cr + lf)
-		// get the request line for further processing
-		requestLine := temp[0]
-		// get the header lines 
-		// find out where the header lines end
-		var i int
-		for i = 1; i < len(temp); i++ {
-			if temp[i] == "" {
-				break
-			}
-		}
-		HeaderLines := temp[1:i]
-		for _, value := range HeaderLines {
-			
-			line := strings.SplitN(value, ":"+sp, 2)
-
-			headers[line[0]] = line[1]
-		}
-		//check if there is any content in the body
-		var bodyLines []string
-		if i  < len(temp) {
-			// get the body content
-			bodyLines = temp[i+1:len(temp)]
-		}
-		body := strings.Join(bodyLines, cr + lf)
-
-		// split the request line into it's components
-		requests := strings.SplitN(requestLine, sp, 3)
-		method := requests[0]
-		url := requests[1]
-		version := requests[2]
-
-		return method, url, version, headers, body
-
-}
-
-func fileExists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err == nil { return true, nil }
-	if os.IsNotExist(err) { return false, nil }
-	return true, err
 }
 
 func loadMovesMap() map[string]string {
