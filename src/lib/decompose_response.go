@@ -5,7 +5,13 @@ package lib
 import (
 	"strings"
 )
-
+// function responsible for decomposing the received string from the server into the required components
+// inputs - response: string containing entire server response
+// outputs - version: string representing HTTP version the server supports
+//			 code: string representing the response code
+//			 status: string representing the response status
+// 			 headers: map of headers to their contents
+// 			 body: string containing reponse message entityBody
 func DecomposeResponse(response string) (string, string, string, map[string]string, string){
 		const sp = "\x20"
 		const cr = "\x0d"

@@ -4,7 +4,13 @@
 
 \usepackage{KJN}
 
-\usepackage{verbatim}
+
+\usepackage{verbatim} % for writing code in the text
+
+\usepackage{listings} %for including code
+\usepackage{golang}  % include custom language for Go.
+\usepackage{gostyle} % include custom style for Go.
+
 
 \pagestyle{plain}
 
@@ -145,6 +151,8 @@ A typical HTTP communication can be described as follows:
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{DESCRIPTION OF CODE}
+
+% \lstinputlisting[language=go, style=go, breaklines=true]{../../src/client/client.go}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

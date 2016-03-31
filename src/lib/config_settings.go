@@ -5,24 +5,23 @@ package lib
 import (
 	"io/ioutil"
 	"strings"
-	"os"
 )
-
+// struct containing all relevant configuration settings
 type ConfigSettings struct {
 	Protocol string
 	Connection string
 	Proxy string
 }
-
- // read contents of the cofiguration file
+// function responsible for reading contents of the cofiguration file
+// outputs - string array containing all current configuration settings
 func ReadConfig() []string {
 	config, err := ioutil.ReadFile("../../config/connection_config.txt")
 	CheckError(err)
 	lines := strings.Split(string(config), "\n")
 	return lines
 }
-
-// initilize the configuration settings based on what was read from the file
+// function responsible for initilizing the configuration settings based on what was read from the file
+// outputs - config: a configSettings object with all configuration settings in a struct
 func InitializeConfig() ConfigSettings {
 	var config ConfigSettings
 	configLines := ReadConfig()
@@ -32,8 +31,8 @@ func InitializeConfig() ConfigSettings {
 
 	return config
 }
-
-// write the new configuration settings to the file
+// function responsible for writing the new configuration settings to the file
+// outputs - err: an error corresponding to writing to file
 func (config *ConfigSettings) WriteConfig() error {
 	writeLines := config.Protocol + "\n"
 	writeLines += config.Connection + "\n"
@@ -41,22 +40,23 @@ func (config *ConfigSettings) WriteConfig() error {
 	err := ioutil.WriteFile("../../config/connection_config.txt", []byte(writeLines), 0644)
 	return err
 }
-
-func (config *ConfigSettings) CheckInput(service string, ConnectionType string) {
-	switch service {
-		case "Protocol": 
-			config.Protocol = ConnectionType
+// function responsible for checking the user inputs and edditing the configuration folder
+// inputs - config: the configuration settings read in from a folder
+//			configStatement: a string representing the configuration setting that must be changed
+//			connectionType: the change that must be changed to configStatement
+func (config *ConfigSettings) CheckInput(configStatement string, connectionType string) {
+	switch configStatement {
+		case "protocol": 
+			config.Protocol = connectionType
 			break
-		case "Connection": 
-			config.Connection = ConnectionType
+		case "connection": 
+			config.Connection = connectionType
 			break
-		case "Proxy":
-			config.Proxy = ConnectionType
+		case "proxy":
+			config.Proxy = connectionType
 			break
 		default:
 	}
-
-	err := config.WriteConfig()
-	CheckError(err)
-	os.Exit(0)
+	// write the new configuration settings to the configuration file
+	config.WriteConfig()
 }
