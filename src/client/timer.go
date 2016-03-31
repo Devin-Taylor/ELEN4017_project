@@ -38,7 +38,7 @@ func (timer *roundTripTimer) loadTimerMap(mapLocation string) {
 	for _, value := range lines {
 		locations := strings.SplitN(value, "\x20", 2)
 
-		tempMap[locations[0]] = locations[1]
+		tempMap[locations[1]] = locations[0]
 	}
 
 	timer.timeMap = tempMap
@@ -61,7 +61,7 @@ func (timer *roundTripTimer) writeTimerToFile(fileLocation string) {
 	var writeString string
 
 	for key, value := range timer.timeMap {
-		writeString += key + " " + value + "\n"
+		writeString += value + " " + key + "\n"
 	}
 
 	ioutil.WriteFile(fileLocation, []byte(writeString), 0644)
