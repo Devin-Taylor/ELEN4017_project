@@ -2,6 +2,7 @@
 
 package lib
 
+// struct that represents a HTTP response 
 type ResponseMessage struct{
 	Version string
 	StatusCode string
@@ -10,11 +11,13 @@ type ResponseMessage struct{
 	EntityBody string
 }
 
+// constructor for the ResponseMessage struct
 func NewResponseMessage() *ResponseMessage {
     return &ResponseMessage{HeaderLines: make(map[string]string)}
 }
 
-// Function to convert the HTTP Response to a string in the correct format
+// function to convert the HTTP Response to a string in the correct format
+// outputs - a string that contains all the information for the response message in the format dictated by RFC7230
 func (rm *ResponseMessage) ToString() string {
 	const sp = "\x20"
 	const lf = "\x0a"
@@ -32,7 +35,8 @@ func (rm *ResponseMessage) ToString() string {
 	return responseString
 }
 
-// Function to convert the HTTP Response to bytes in the correct format
+// function to convert the HTTP Response to bytes in the correct format
+// outputs - the bytes value of the string described above
 func (rm * ResponseMessage) ToBytes() []byte {
 	return  []byte(rm.ToString())
 }

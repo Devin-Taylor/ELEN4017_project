@@ -6,6 +6,11 @@ import (
 	"strings"
 )
 
+// function to convert a request message string into its various components 
+// inputs - string containing the requests
+// outputs - strings containing the method, url, version
+//         - a map containing the header fields as keys and the header values as values
+//         - a string containing the body
 func DecomposeRequest(request string) (string, string, string, map[string]string, string){
 		const sp = "\x20"
 		const cr = "\x0d"

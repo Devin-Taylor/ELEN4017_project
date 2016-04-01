@@ -17,6 +17,7 @@ const httpVersion = "HTTP/1.1"
 const path = "../../objects/"
 
 func main() {
+	// set the port on which to listen
 	service := ":1235"
 
 	go startTCPServer(service)
@@ -29,8 +30,11 @@ func main() {
 	}
 }
 
+// function responsible for starting and running the TCP server
+// inputs - a string containing the port on which to run the server
 func startTCPServer(service string) {
 	defer fmt.Println("closing TCP server")
+	//create a listener for a TCP connection on the given port
 	listener, err := net.Listen("tcp", service)
 	lib.CheckError(err)
 
@@ -41,12 +45,14 @@ func startTCPServer(service string) {
 			continue
 		}
 
-		// handle the TCP connection
+		// handle the TCP connection on a new thread
 		fmt.Println("New connection for ", conn.RemoteAddr())
 		go  handleTCPClient(conn)
 	}
 }
 
+// function responsible for starting and running the UDP server
+// inputs - a string containing the port on which to run the server
 func startUDPServer(service string) {
 	defer fmt.Println("closing UDP server")
 	packetConn, err := net.ListenPacket("udp", service)
@@ -58,6 +64,8 @@ func startUDPServer(service string) {
 	}
 }
 
+// function responsible for handling a client communicating with the UDP server
+// inputs - the net.PacketConn which represents the communication channel between the client and server
 func handleUDPClient(conn net.PacketConn) {
 	// get message of at maximum 512 bytes
 	var buf [1024]byte	
@@ -72,7 +80,7 @@ func handleUDPClient(conn net.PacketConn) {
 		// convert message to string
 		message := string(buf[0:])
 
-		// compose reponse to message
+		// compose response to message
 		response := composeResponse(message)
 
 		// write the response to the socket and send to the correct address
@@ -83,6 +91,8 @@ func handleUDPClient(conn net.PacketConn) {
 	}
 }
 
+// function responsible for handling a client that makes a connection to the TCP server
+// inputs - the net.Conn which represents the connection made by the client
 func handleTCPClient(conn net.Conn) {
 	defer conn.Close()
 	defer fmt.Println("closing connection for ", conn.RemoteAddr())
@@ -109,20 +119,27 @@ func handleTCPClient(conn net.Conn) {
 	}
 }
 
+// function responsible for composing an appropriate response for the client
+// inputs - string containing the request send by the client
+// outputs - the response message as a ResponseMessage struct
 func composeResponse(message string) *lib.ResponseMessage{
 		// load the map describing location changes
 		locationMap := loadMovesMap()
 
 		// decompose message
-		method, url, version, headers, body := lib.DecomposeRequest(message) // maybe move this out of function
+		method, url, version, headers, body := lib.DecomposeRequest(message)
 
+		// set the flag indicating that a response must still be composed to true
 		composeResponse := true
+
+		// create a new response
 		var response = lib.NewResponseMessage()
+		// set the HTTP version
 		response.Version = httpVersion
 
 		// set response headers		
 		response.HeaderLines["Server"] = "FooBar"
-		response.HeaderLines["Date"] = time.Now().Format(time.RFC1123Z)
+		response.HeaderLines["Date"] = time.Now().Format(time.RFC1123Z) // this is the time format recommended by golang for a server application
 		response.HeaderLines["Content-Language"] = "en"
 
 		// make sure that version is compatible with server otherwise send a 505 response
@@ -133,7 +150,7 @@ func composeResponse(message string) *lib.ResponseMessage{
 			response.Phrase = "HTTP Version Not Supported"
 			response.EntityBody = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n<title>505 Version Not Supported</title>\n</head>\n<body>\n<h1>Version Not Supported</h1>\n<p>Your HTTP version is not supported by this server, please use HTTP/1.1.</p>\n</body>\n</html>"
 			response.HeaderLines["Content-Length"] = strconv.Itoa(len([]byte(response.EntityBody)))
-			// set flag
+			// set flag to false indicating that a response has been composed
 			composeResponse = false
 		}
 
@@ -205,9 +222,7 @@ func composeResponse(message string) *lib.ResponseMessage{
 
 						response.EntityBody = ""
 						response.HeaderLines["Content-Length"] = strconv.Itoa(len([]byte(response.EntityBody)))
-     				}
-
-					
+     				}					
 
 					// set flag
 					composeResponse = false
@@ -294,10 +309,12 @@ func composeResponse(message string) *lib.ResponseMessage{
 		return response
 }
 
+// function responsible for load the map which indicates if a resource has been moved from one URL to another
 func loadMovesMap() map[string]string {
 	const mapLocation = "../../config/moved_objects.txt"
 	locationMap := make(map[string]string)
 
+	// open the file containing the data
 	file, err := os.Open(mapLocation)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %s", err.Error())
@@ -305,12 +322,15 @@ func loadMovesMap() map[string]string {
 	}
 	defer file.Close()
 
+	// read the contents of the file and convert to string
 	b, err := ioutil.ReadAll(file)
 	mapping := string(b)
 
+	// split up the contents by line
 	lines :=  strings.Split(mapping, "\n")
 	lines = lines[0:len(lines)-1]
 
+	// split up each line by a space and store values in map
 	for _, value := range lines {
 		locations := strings.Split(value, "\x20")
 
