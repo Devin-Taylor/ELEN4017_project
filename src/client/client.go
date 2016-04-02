@@ -92,8 +92,9 @@ func handleRequest(method string, url string, body string, host string) {
 		case "301","302":
 			// if redirected get new destination
 			newHost, newUrl := getRedirectLocation(headers)
+			fmt.Println(newUrl, "**********")
 			fmt.Println(host, strings.Split(conn.RemoteAddr().String(), ":")[0], host == strings.Split(conn.RemoteAddr().String(), ":")[0])
-			if newHost == "localhost" || host == strings.Split(conn.RemoteAddr().String(), ":")[0]{
+			if newHost == "localhost" || host == strings.Split(conn.RemoteAddr().String(), ":")[0] || host == conn.RemoteAddr().String() {
 				port = ":1235"
 			} else {
 				port = ":80"
@@ -237,6 +238,7 @@ func getUserInputs() (string, string, string) {
 // outputs - fileName: string representing the name of the file
 func getFileName(value string) string {
 	StopIndex := strings.LastIndex(value, "/")
+	fmt.Println(value, StopIndex)
 	fileName := value[StopIndex:len(value)]
 
 	return fileName

@@ -58,7 +58,7 @@ func SetRequestMessage(service string, config ConfigSettings, Method string, Url
 	request := NewRequestMessage()
 
 	request.SetHeaders(service, config.Connection, "Mozilla/5.0", "en")
-	request.SetRequestLine(Method, Url, "HTTP/1.1")
+	request.SetRequestLine(Method, Url, "HTTP/1.0")
 	request.SetEntityBody(body)
 
 	return request
