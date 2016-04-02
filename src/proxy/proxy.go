@@ -42,37 +42,44 @@ func handleClient(conn net.Conn) {
 		if err != nil {
 			return
 		}
-	// convert message to string and decompose it
-	message := string(buf[0:])
-	method, url, version, headers, body := lib.DecomposeRequest(message)
-	var host string
-	// find the hosts address
-	for key, value := range headers {
-		if(strings.ToUpper(key) == "HOST"){
-			host = value
-			break
+		// convert message to string and decompose it
+		message := string(buf[0:])
+		method, url, version, headers, body := lib.DecomposeRequest(message)
+		var host string
+		// find the hosts address
+		for key, value := range headers {
+			if(strings.ToUpper(key) == "HOST"){
+				host = value
+				break
+			}
 		}
-	}
-	// search the proxy cache for requested files
-	isInCache, lastModified, locationMap := checkInCache(url, strings.Split(host, ":")[0])
-	// if is in cache then modify the request message to include the last modified date and recompile message
-	if isInCache {
-		headers = modifyHeaders(lastModified, headers)
-		message = compileNewRequest(method, url, version, headers, body)
-	}
-	// get the response message from the server
-	serverResponse := handleServer(message, host)
-	// check the server for the file and if it has been modified
-	isUpdated, newResponse, newTime := getNewResponse(serverResponse, strings.Split(host, ":")[0], url)
-	// if file has been modified then write new file to cache
-	if isUpdated {
-		destination := strings.Split(host, ":")[0]+url
-		locationMap[destination] = newTime
-		saveMap(locationMap, "../../cache/cache_map.txt")
-	}
-	// write the response message back to the client
-	_, err = conn.Write(newResponse.ToBytes())
-	lib.CheckError(err)
+		if strings.ToUpper(method) == "GET" {
+			// search the proxy cache for requested files
+			isInCache, lastModified, locationMap := checkInCache(url, strings.Split(host, ":")[0])
+			// if is in cache then modify the request message to include the last modified date and recompile message
+			if isInCache {
+				headers = modifyHeaders(lastModified, headers)
+				message = compileNewRequest(method, url, version, headers, body)
+			}
+			// get the response message from the server
+			serverResponse := handleServer(message, host)
+			// check the server for the file and if it has been modified
+			isUpdated, newResponse, newTime := getNewResponse(serverResponse, strings.Split(host, ":")[0], url)
+			// if file has been modified then write new file to cache
+			if isUpdated {
+				destination := strings.Split(host, ":")[0]+url
+				locationMap[destination] = newTime
+				saveMap(locationMap, "../../cache/cache_map.txt")
+			}
+			// write the response message back to the client
+			_, err = conn.Write(newResponse.ToBytes())
+			lib.CheckError(err)
+		} else {
+			// get the response message from the server
+			serverResponse := handleServer(message, host)
+			_, err = conn.Write([]byte(serverResponse))
+			lib.CheckError(err)
+		}
 	}
 }
 // function responsible for getting the new response message based on what was received

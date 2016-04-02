@@ -81,7 +81,7 @@ func handleUDPClient(conn net.PacketConn) {
 		message := string(buf[0:])
 
 		// compose response to message
-		response := composeResponse(message)
+		response := composeResponse(message, strings.Split(addr.String(), ":")[0])
 
 		// write the response to the socket and send to the correct address
 		_, err2 := conn.WriteTo(response.ToBytes(), addr)
@@ -110,7 +110,7 @@ func handleTCPClient(conn net.Conn) {
 		message := string(buf[0:])		
 
 		// compose reponse to message
-		response := composeResponse(message)
+		response := composeResponse(message, strings.Split(conn.LocalAddr().String(), ":")[0])
 		// write the response to the socket
 		_, err2 := conn.Write(response.ToBytes())
 		if err2 != nil {
@@ -122,7 +122,7 @@ func handleTCPClient(conn net.Conn) {
 // function responsible for composing an appropriate response for the client
 // inputs - string containing the request send by the client
 // outputs - the response message as a ResponseMessage struct
-func composeResponse(message string) *lib.ResponseMessage{
+func composeResponse(message string, address string) *lib.ResponseMessage{
 		// load the map describing location changes
 		locationMap := loadMovesMap()
 
@@ -160,7 +160,7 @@ func composeResponse(message string) *lib.ResponseMessage{
 			// compose 301
 			response.StatusCode = "301"
 			response.Phrase = "Moved Permanently"
-			response.HeaderLines["Location"] = locationMap[url]
+			response.HeaderLines["Location"] = "http://" + address + locationMap[url]
 			response.EntityBody = "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n<title>301 Moved Permanently</title>\n</head>\n<body>\n<h1>Moved Permanently</h1>\n<p>The document has moved <a href=\"" + url + "\">here</a>.</p>\n</body>\n</html>"
 			response.HeaderLines["Content-Length"] = strconv.Itoa(len([]byte(response.EntityBody)))
 			// set flag
@@ -239,6 +239,7 @@ func composeResponse(message string) *lib.ResponseMessage{
         				fmt.Println(err)
      				}
      				response.HeaderLines["Content-Length"] = strconv.FormatInt(stat.Size(),10)
+     				response.EntityBody = ""
 
 					// set flag
 					composeResponse = false
