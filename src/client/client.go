@@ -92,7 +92,6 @@ func handleRequest(method string, url string, body string, host string) {
 		case "301","302":
 			// if redirected get new destination
 			newHost, newUrl := getRedirectLocation(headers)
-			fmt.Println(newUrl, "**********")
 			fmt.Println(host, strings.Split(conn.RemoteAddr().String(), ":")[0], host == strings.Split(conn.RemoteAddr().String(), ":")[0])
 			if newHost == "localhost" || host == strings.Split(conn.RemoteAddr().String(), ":")[0] || host == conn.RemoteAddr().String() {
 				port = ":1235"
@@ -160,7 +159,7 @@ func handleRequest(method string, url string, body string, host string) {
 		// for each source - fetch it
 		for host, url = range sourceMap {
 			fmt.Println(host, strings.Split(conn.RemoteAddr().String(), ":")[0], host == strings.Split(conn.RemoteAddr().String(), ":")[0])
-			if host == "localhost" || host == strings.Split(conn.RemoteAddr().String(), ":")[0]{
+			if host == "localhost" || host == strings.Split(conn.RemoteAddr().String(), ":")[0] || host == conn.RemoteAddr().String() {
 				port = ":1235"
 			} else {
 				port = ":80"
