@@ -357,7 +357,7 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 
 	\subsection{Overall Code Structure}
 
-		The project was structured such that all code was localised to a common root directory called \texttt{src/}. By localising the code in a source root directory it allowed for the client, server and proxy associated code to be located in this folder under their own subdirectories (i.e. \texttt{src/client/}). Due to this specific project layout a feature of Go is that all common functionality between the client, server and proxy code can be abstracted to a further subdirectory \texttt{/src/lib/}, thus creating a library of common functionality for the project. This library can be sourced in any project script allowing that script access to all common functionality.\\
+		The project was structured such that all code was localised to a common root directory called \texttt{src/}. By localising the code in a source root directory it allowed for the client, server and proxy associated code to be located in this folder under their own subdirectories (i.e. \texttt{src/client/}). Due to this specific project layout a feature of Go is that all common functionality between the client, server and proxy code can be abstracted to a further subdirectory \texttt{src/lib/}, thus creating a library of common functionality for the project. This library can be sourced in any project script allowing that script access to all common functionality.\\
 		
 		The majority of the code was centralised around the functionality of structs. The main reason for doing this was to provide each struct with its own methods, a feature of the Go programming language. An example of this implementation can be seen in the listings excerpt from the \texttt{request\_message.go} file (Listings~\ref{lst:struct}). 
 		
@@ -392,13 +392,24 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 		
 		\subsubsection*{Processing The Client Request:} Processing the client request requires decomposing the client request message to obtain the HTTP method, the required URL, the HTTP version being used by the client, the header field lines and the body (if one is attached). Depending on this information the server is able to perform certain conditional checks in order to generate the correct response message. 
 		
-		\subsubsection*{Taking Action and Generating Response Message:} The HTTP method will determine the course of action that the server follows, these are detailed in Table~\ref{httpreqs}. The methods of interest are the GET and POST methods. The GET method firstly requires the server to check if the file exists and secondly, if it does exist, to retrieve a copy of the file and parse it into the response message to be sent to the client. If the file does not exist or there was another problem with the client request message, the server would generate the appropriate error message detailed in Table~\ref{httpresps}. The post method is of interest because after performing the same checks it either need to edit the found file or create the file on the server if the client has the correct permissions. 
+		\subsubsection*{Taking Action and Generating Response Message:} The HTTP method will determine the course of action that the server follows, these are detailed in Table~\ref{httpreqs}. The method of interest is the GET method. The GET method firstly requires the server to check if the file exists and secondly, if it does exist, to retrieve a copy of the file and parse it into the response message to be sent to the client. If the file does not exist or there was another problem with the client request message, the server would generate the appropriate error message detailed in Table~\ref{httpresps}.
 		
 		\subsubsection*{Server Proxy Interfacing:} The proxy interaction will make specific reference to the GET request as this encompasses all functionality. The implementation of the GET response code can be seen in Listing~\ref{lst:server_prox} of Appendix~\ref{app:server}. \\
 		
 		If the proxy contains a copy of the requested file it appends a \texttt{Last-Modified} header line to the request message, this is what the server looks for. If there is a date mentioned the server then compares if the file has been modified since that date (the last modified date can be obtained from the function call in line 7 of the listing), this is achieved through the use of the \texttt{time.After()} function in the \texttt{time} Go package (see line 11 of the listing). If the file has been modified then the server returns the latest copy of the file and if it hasn't it returns the \texttt{304 Not Modified} response. \\
 		
-		\subsubsection*{Moved Files:} In order to determine whether or not a file has been moved the server keeps a table of file previous location and current location for all moved files, this is stored as a text file on the server. When a request for a file is made, if the location appears in this file the server composes a \texttt{301} response message and appends a \texttt{Location} header with the new location to the header field. 
+		\subsubsection*{Moved Files:} In order to determine whether or not a file has been moved the server keeps a table of file previous location and current location for all moved files, this is stored as a text file on the server. When a request for a file is made, if the location appears in this file the server composes a \texttt{301} response message and appends a \texttt{Location} header with the new location to the header field.
+		
+	\subsection{Proxy}
+		
+		The proxy sending and receiving of information is identical in nature to the corresponding implementations in the client and server, therefore the only aspect of the proxy that will be analysed is caching. Two characteristics of proxy caching is the storing of files and the conditional gets. \\
+		
+		\subsubsection*{File Storing:} File storing is only implemented for GET requests. When the response message is received from the server the proxy creates a directory in the cache corresponding to the full path of the file received from the server. A design decision was taken to "mimic" the server in the proxy as opposed to mapping file names to a different location in the cache. The code used to create a directory with full read write permission can be seen in line 3 of Listing~\ref{lst:proxy_cache} of Appendix~\ref{app:proxy}. Once the directory is created the code then writes the corresponding file to the location, this can be seen in line 6 of the listing.
+		
+		\subsubsection*{Conditional Get:} The conditional GET revolves primarily around the aforementioned \texttt{304} response code from the server. When the proxy receives the clients request message it checks if the file occurs in the proxy cache, see line 1 of Listing~\ref{lst:proxy_cond}. This is achieved by using the look-up table stored on the proxy of URL to last-modified times. If the file does occur in cache the client request message is modified by including the last-modified date in the look-up table. This is simple to do as the headers are stored as a map already. The proxy then obtains the response message from the server which either specifies that the file was modified or it was not. \\
+		
+		If the file is not modified then the proxy retrieves the file from cache and forwards a copy of it to the client. If the file has been modified then new file is written to cache as mentioned above and the cache map is modified to contain the new date, this implementation can be seen in lines 12-16 of Listing~\ref{lst:proxy_cond}. 
+		
 	
 % \lstinputlisting[language=go, style=go, breaklines=true]{../../src/client/client.go}
 
@@ -560,8 +571,14 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 		\lstinputlisting[language=go, caption=Server TCP and DUP handing, label={lst:server_conn}, style=go, breaklines=true, firstline=19, lastline=65]{../../src/server/server.go}
 
 		\lstinputlisting[language=go, caption=Server proxy GET interfaction, label={lst:server_prox}, style=go, breaklines=true, firstline=186, lastline=225]{../../src/server/server.go}
-	% subsubsection wireshark_results (end)
-
+		
+	\subsection{Proxy}
+	\label{app:proxy}
+	
+		\lstinputlisting[language=go, caption=Server proxy GET interfaction, label={lst:proxy_cache}, style=go, breaklines=true, firstline=116, lastline=121]{../../src/proxy/proxy.go}
+		
+		\lstinputlisting[language=go, caption=Conditional GET, label={lst:proxy_cond}, style=go, breaklines=true, firstline=59, lastline=77]{../../src/proxy/proxy.go}
+		
 
 % section results (end)
 
