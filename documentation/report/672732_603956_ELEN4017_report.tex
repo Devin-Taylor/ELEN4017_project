@@ -204,7 +204,6 @@ A typical HTTP communication can be described as follows:
 
 	Although HTTP makes use of TCP as it's transport layer protocol, a HTTP-like communication system can be implemented with the User Datagram Protocol (UDP). This would have the disadvantage that it provides unreliable communication. However, it could be faster than if TCP were used.
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{SYSTEM OVERVIEW} \label{sysover}
 
@@ -309,6 +308,21 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{DIVISION OF WORK}
 
+	\subsection{Overall Project Management}
+	
+		The overall project was managed through the use of time management application called Trello. Trello allows job cards to be created and assigned to a member of the group. It has multiple features such as allocating cards as bugs, providing deadlines for cards and allowing for files to be uploaded and shared. All these aspects of the application were used continuously throughout the project. A screen shot of the board that was used for the project can be seen in Figure~\ref{fig:trello} of Appendix~\ref{app:time_man}. \\
+		
+		The code aspect of the project was managed using git and GitHub. The integration capabilities offered by git meant that the team did not necessarily need to work together all the time, which increased the rate at which work was developed and ultimately lead to the deadline being met. 
+
+	\subsection{Division of Code}
+	
+		The division of work was such that each member of the group contributed equally to the outcome of the entire project. This was achieved by designating specific subsystems to each member of the group. Devin Taylor was responsible for handling the client code and all associated common functionality, while James Allignham was responsible for handling all the sever code and associated common functionality. From these two bases both engineers contributed equally to the proxy as the majority of the proxy was composed of the subsystems. Table~\ref{tab:functions} in Appendix~\ref{app:other_func}. A screen shot of the GitHub contributions to the project can be seen in Figure~\ref{fig:github} of Appendix~\ref{app:other_func}, this figure emphasises the equal contributions of each engineer. 
+	
+	\subsection{Division of Report Writing}
+	
+		The report writing was divided in the same manor as the code, each engineer was responsible for writing about the sections of code that they implemented. The theoretical aspect of the report was divided equally by the aspects that each engineer felt most comfortable contributing to. The introduction, background, HTTP description, system overview were all done by James Allignham while the results, critical analysis, conclusion and division of work were all done by Devin Taylor.
+	
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{RESULTS}
 
@@ -406,7 +420,7 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 
 	\subsection{Overall Code Structure}
 
-		The project was structured such that all code was localised to a common root directory called \texttt{src/}. By localising the code in a source root directory it allowed for the client, server and proxy associated code to be located in this folder under their own subdirectories (i.e. \texttt{src/client/}). Due to this specific project layout a feature of Go is that all common functionality between the client, server and proxy code can be abstracted to a further subdirectory \texttt{/src/lib/}, thus creating a library of common functionality for the project. This library can be sourced in any project script allowing that script access to all common functionality.\\
+		The project was structured such that all code was localised to a common root directory called \texttt{src/}. By localising the code in a source root directory it allowed for the client, server and proxy associated code to be located in this folder under their own subdirectories (i.e. \texttt{src/client/}). Due to this specific project layout a feature of Go is that all common functionality between the client, server and proxy code can be abstracted to a further subdirectory \texttt{src/lib/}, thus creating a library of common functionality for the project. This library can be sourced in any project script allowing that script access to all common functionality.\\
 		
 		The majority of the code was centralised around the functionality of structs. The main reason for doing this was to provide each struct with its own methods, a feature of the Go programming language. An example of this implementation can be seen in the listings excerpt from the \texttt{request\_message.go} file (Listings~\ref{lst:struct}). 
 		
@@ -425,17 +439,43 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 		
 		\subsubsection*{Establishing The Connection:} The type of connection that is established by the client is dependant on what protocol configuration setting was specified by the client. Despite this the \texttt{net} package in Go is able to accept either TCP or UDP when creating a network connection \cite{net}. The connection was established as can be seen in Listing~\ref{lst:client_conn} of Appendix~\ref{app:client}. 
 		
-		\subsubsection*{Retrieving Information:} In order to determine whether or not all the information had been obtained from the server it was required that initially the client would read a large packet from the connection. In this packet the client code would search for either the presence of either the header line \texttt{Transfer-Encoding:Chunked} or \texttt{Content-Length:\textit{<bytes>}}. The presence of either of these two header lines meant that the server had divided the sent file into multiple packets. \\
+		\subsubsection*{Retrieving Information:} In order to determine whether or not all the information had been obtained from the server it was required that initially the client would read a large packet from the connection. In this packet the client code would search for either the presence of either the header line \texttt{Transfer-Encoding:Chunked} or \texttt{Content-Length:\textit{<bytes>}}. The presence of either of these two header lines meant that the server had divided the sent file into multiple packets. The fact that all the headers are parsed into a map of header name to details it makes the look up fast and effective. \\
 		
-		In order to read multiple packets it was necessary to continuously loop over the read function until all the information had been obtained. Determining when to exit this loop was aided by the above mentioned header lines. Firtly the \texttt{Transfer-Encoding} is a header line specific to HTTP/1.1 which ensures that an End-Of-File character, \texttt{\textbackslash r\textbackslash n0\textbackslash r\textbackslash n\textbackslash r\textbackslash n}, will appear in the last packet. Therefore, searching each packet for this character provided the required knowledge. Secondly, the \texttt{Content-Length} provided knowledge of the size of the attached body. Therefore, utilising this and being able to manually calculate the size of the header lines meant that the packets could be read from the connection and continually subtracted from the running tally of remaining bytes until such time that the running tally became negative. The implementation of these two concepts can be seen in Listing~\ref{lst:client_read} of Appendix~\ref{app:client}. 
+		In order to read multiple packets it was necessary to continuously loop over the read function until all the information had been obtained. Determining when to exit this loop was aided by the above mentioned header lines. Firstly the \texttt{Transfer-Encoding} is a header line specific to HTTP/1.1 which ensures that an End-Of-File character, \texttt{\textbackslash r\textbackslash n0\textbackslash r\textbackslash n\textbackslash r\textbackslash n}, will appear in the last packet. Therefore, searching each packet for this character provided the required knowledge. Secondly, the \texttt{Content-Length} provided knowledge of the size of the attached body. Therefore, utilising this and being able to manually calculate the size of the header lines meant that the packets could be read from the connection and continually subtracted from the running tally of remaining bytes until such time that the running tally became negative. The implementation of these two concepts can be seen in Listing~\ref{lst:client_read} of Appendix~\ref{app:client}. 
 		
 		\subsubsection*{Analysing Received Information:} The next important aspect of the client was determining whether or not the received file contained any references to other files that were imperative to the received file forming correctly. It was assumed that all references to other files would begin with "src=http://" in the base HTML file, all other file references were ignored as they would be beyond the scope of the project.\\
 		
 		String manipulation was used to determine the presence of these sources. If there were any sources present the \texttt{retrieveSources()} function, see Listing~\ref{lst:client_ret} of Appendix~\ref{app:client}, would deconstruct the referenced strings through the use of regular expressions and the occurrence of special characters. From the deconstruction the function constructs a map of host name to file extension on the hosts server. The map would then be used to iterate over all elements in the map and retrieve them as described in the above sections.
 				
-			
+	\subsection{Server Code}
 	
-% \lstinputlisting[language=go, style=go, breaklines=true]{../../src/client/client.go}
+		As in the case of the client code the server code was primarily revolved around certain concepts. These concepts are: confirming and establishing the connection with the client, processing the clients request, generating the appropriate response to the client's request and sending the generated information to the client. The server has additional functionality in two aspects, namely: when interfacing with the proxy it has to determine if a cached file has been recently updated and when interfacing with the client it has to prove the new location of a page if it has been moved.  
+		
+		\subsubsection*{Listening For and Establishing a Connection:} Unlike the case for the client, the server side calls for the implementation of TCP and UDP differ. Thus, in order to account for this, two separate functions were implemented to establish the individual connections. The code used to implement these connection can be seen in Listing~\ref{lst:server_conn} of Appendix~\ref{app:server}. Two aspects of Listing~\ref{lst:server_conn} need to be noted. Firstly, the listening function calls differ (lines 20 and 40) and secondly in lines 5 and 6 there is the implementation of the \texttt{go <function>} command which is the Go programming language implementation of establishing a new thread. Therefore, each time a new connection request is received by the server, the request is handled in a new thread. 
+		
+		\subsubsection*{Processing The Client Request:} Processing the client request requires decomposing the client request message to obtain the HTTP method, the required URL, the HTTP version being used by the client, the header field lines and the body (if one is attached). Depending on this information the server is able to perform certain conditional checks in order to generate the correct response message. 
+		
+		\subsubsection*{Taking Action and Generating Response Message:} The HTTP method will determine the course of action that the server follows, these are detailed in Table~\ref{httpreqs}. The method of interest is the GET method. The GET method firstly requires the server to check if the file exists and secondly, if it does exist, to retrieve a copy of the file and parse it into the response message to be sent to the client. If the file does not exist or there was another problem with the client request message, the server would generate the appropriate error message detailed in Table~\ref{httpresps}.
+		
+		\subsubsection*{Server Proxy Interfacing:} The proxy interaction will make specific reference to the GET request as this encompasses all functionality. The implementation of the GET response code can be seen in Listing~\ref{lst:server_prox} of Appendix~\ref{app:server}. \\
+		
+		If the proxy contains a copy of the requested file it appends a \texttt{Last-Modified} header line to the request message, this is what the server looks for. If there is a date mentioned the server then compares if the file has been modified since that date (the last modified date can be obtained from the function call in line 7 of the listing), this is achieved through the use of the \texttt{time.After()} function in the \texttt{time} Go package (see line 11 of the listing). If the file has been modified then the server returns the latest copy of the file and if it hasn't it returns the \texttt{304 Not Modified} response. \\
+		
+		\subsubsection*{Moved Files:} In order to determine whether or not a file has been moved the server keeps a table of file previous location and current location for all moved files, this is stored as a text file on the server. When a request for a file is made, if the location appears in this file the server composes a \texttt{301} response message and appends a \texttt{Location} header with the new location to the header field.
+		
+	\subsection{Proxy}
+		
+		The proxy sending and receiving of information is identical in nature to the corresponding implementations in the client and server, therefore the only aspect of the proxy that will be analysed is caching. Two characteristics of proxy caching is the storing of files and the conditional gets. \\
+		
+		\subsubsection*{File Storing:} File storing is only implemented for GET requests. When the response message is received from the server the proxy creates a directory in the cache corresponding to the full path of the file received from the server. A design decision was taken to "mimic" the server in the proxy as opposed to mapping file names to a different location in the cache. The code used to create a directory with full read write permission can be seen in line 3 of Listing~\ref{lst:proxy_cache} of Appendix~\ref{app:proxy}. Once the directory is created the code then writes the corresponding file to the location, this can be seen in line 6 of the listing.
+		
+		\subsubsection*{Conditional Get:} The conditional GET revolves primarily around the aforementioned \texttt{304} response code from the server. When the proxy receives the clients request message it checks if the file occurs in the proxy cache, see line 1 of Listing~\ref{lst:proxy_cond}. This is achieved by using the look-up table stored on the proxy of URL to last-modified times. If the file does occur in cache the client request message is modified by including the last-modified date in the look-up table. This is simple to do as the headers are stored as a map already. The proxy then obtains the response message from the server which either specifies that the file was modified or it was not. \\
+		
+		If the file is not modified then the proxy retrieves the file from cache and forwards a copy of it to the client. If the file has been modified then new file is written to cache as mentioned above and the cache map is modified to contain the new date, this implementation can be seen in lines 12-16 of Listing~\ref{lst:proxy_cond}. 
+	
+	\subsection{All Other Common Functionality}
+	
+		The above mentioned sections were described in detail as they are fundamental to the functionality of the system. The other common functions implemented in the project are described in brief in Table~\ref{tab:functions} of Appendix~\ref{app:other_func}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -590,10 +630,57 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 		\lstinputlisting[language=go, caption=Client read from connection, label={lst:client_read}, style=go, breaklines=true, firstline=113, lastline=148]{../../src/client/client.go}
 		
 		\lstinputlisting[language=go, caption=Client retrieve sources function, label={lst:client_ret}, style=go, breaklines=true, firstline=247, lastline=266]{../../src/client/client.go}
+		
+	\subsection{Server}
+	\label{app:server}
+	
+		\lstinputlisting[language=go, caption=Server TCP and DUP handing, label={lst:server_conn}, style=go, breaklines=true, firstline=19, lastline=65]{../../src/server/server.go}
 
-	% subsubsection wireshark_results (end)
+		\lstinputlisting[language=go, caption=Server proxy GET interfaction, label={lst:server_prox}, style=go, breaklines=true, firstline=186, lastline=225]{../../src/server/server.go}
+		
+	\subsection{Proxy}
+	\label{app:proxy}
+	
+		\lstinputlisting[language=go, caption=Server proxy GET interfaction, label={lst:proxy_cache}, style=go, breaklines=true, firstline=116, lastline=121]{../../src/proxy/proxy.go}
+		
+		\lstinputlisting[language=go, caption=Conditional GET, label={lst:proxy_cond}, style=go, breaklines=true, firstline=59, lastline=77]{../../src/proxy/proxy.go}
+		
+	\subsection{Other Functionality}
+	\label{app:other_func}
+		\begin{table}[htbp]
+			\centering
+			\caption{Different methods for invoking server response errors}
+			\label{tab:functions}
+			\begin{tabular}{p{0.2\columnwidth}| p{0.2\columnwidth} | p{0.1\columnwidth} | p{0.5\columnwidth}}
+				\hline
+				\textbf{Function Name} & \textbf{File} & \textbf{Author} & \textbf{Description} \\ \hline
+				newRoundTripTimer & timer.go & DT & Create new timer object \\
+				loadTimerMap & timer.go & DT & Load pre-existing timer values \\
+				startTimer & timer.go & DT & Start the timer \\
+				stopTimer & timer.go & DT & Stop the timer and calculate duration \\
+				addToTimer & timer.go & DT & Add the new values to the timer map \\
+				writeTimerToFile & timer.go & DT & Write new timer values to the timer map file \\
+				\hline
+			\end{tabular}
+		\end{table}
 
-
+\clearpage
+\section{Time Management}
+\label{app:time_man}
+	\begin{figure}[h!]
+		\centering
+		\includegraphics[width=\columnwidth]{resources/trello_networks}
+		\caption{Screen shot of Trello board used}
+		\label{fig:trello}
+	\end{figure}
+	
+	\begin{figure}[h!]
+		\centering
+		\includegraphics[width=\columnwidth]{resources/github_code}
+		\caption{Screen shot of GitHub contributions}
+		\label{fig:github}
+	\end{figure}
+	
 % section results (end)
 
 \end{document}
