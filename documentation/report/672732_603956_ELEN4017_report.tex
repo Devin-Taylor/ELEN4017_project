@@ -36,7 +36,7 @@
 
 \title{Implementation of the HTTP Protocol in Go \\ ELEN4017 Project Report}
 
-\author{James Allingham (672732) and Devin Taylor (603956)}
+\author{James Allingham (672732) and Devin Taylor (603956) - Group 11}
 \thanks{School of Electrical \& Information Engineering, University of the
 Witwatersrand, Private Bag 3, 2050, Johannesburg, South Africa}
 
@@ -45,7 +45,7 @@ Witwatersrand, Private Bag 3, 2050, Johannesburg, South Africa}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \abstract{}
 
-\keywords{}
+\keywords{HTTP, Client-Server, Proxy Server, TCP, UDP, Go programming language}
 
 
 \maketitle
@@ -189,13 +189,13 @@ A typical HTTP communication can be described as follows:
 	Another limitation of HTTP that results from its statelessness is that it does not have a mechanism for `smart' communication. Consider the following situation:
 
 	\begin{enumerate}
-		\item A client requests the file \verb|Foo.bar|.
+		\item A client requests the file \texttt{Foo.bar}.
 		\item The server responds by sending the file to the client by encapsulating it withing an HTTP response message.
-		\item The same client receives the file and immediately requests the same file, \verb|Foo.bar|, again.
+		\item The same client receives the file and immediately requests the same file, \texttt{Foo.bar}, again.
 		\item The server responds by sending the exact same file to the client again.
 	\end{enumerate} 
 
-	The problem with the above situation is that the server is wasting time sending the client the file \verb|Foo.bar| again because no changes have been made to the file. As a result the server could be slower to respond to other clients. This also increases congestion on the uplink of the Local Area Network of the client. The solution is to make use of a Proxy server (proxy), also known as a web cache. In this situation all HTTP requests are sent to the proxy by default. The proxy then forwards requests to the destination servers. The proxy acting as an intermediary between the clients and server can now store files sent from a server to a client. Now when a client requests the same file in quick succession, the server need only send it once. This solves both problems: the server has a reduced load and the uplink traffic is also reduced. Additionally, because LANs usually have network speeds orders of magnitude larger than the uplink, the client gets the data faster. By making use of the \emph{Last-Modified} and \emph{If-Modified-Since} headers, the proxy can make sure that it always serves the client with the most up to date version of the requested file. This is accomplished with the \emph{Conditional-Get} request. 	
+	The problem with the above situation is that the server is wasting time sending the client the file \texttt{Foo.bar} again because no changes have been made to the file. As a result the server could be slower to respond to other clients. This also increases congestion on the uplink of the Local Area Network of the client. The solution is to make use of a Proxy server (proxy), also known as a web cache. In this situation all HTTP requests are sent to the proxy by default. The proxy then forwards requests to the destination servers. The proxy acting as an intermediary between the clients and server can now store files sent from a server to a client. Now when a client requests the same file in quick succession, the server need only send it once. This solves both problems: the server has a reduced load and the uplink traffic is also reduced. Additionally, because LANs usually have network speeds orders of magnitude larger than the uplink, the client gets the data faster. By making use of the \emph{Last-Modified} and \emph{If-Modified-Since} headers, the proxy can make sure that it always serves the client with the most up to date version of the requested file. This is accomplished with the \emph{Conditional-Get} request. 	
 
 	\subsection{User Datagram Protocol}
 
@@ -218,7 +218,7 @@ A typical HTTP communication can be described as follows:
 
 	\subsubsection{Proxy Server:}
 
-	The proxy is responsible for taking all incoming requests from the client and forwarding them to the destination server. The proxy server must also cache web objects sent, via its self, from the server to the client. This makes use of the \verb|If-Modified-Since| and \verb|Last-Modified| header fields to allow the proxy to have the most up to date version of any object in its cache. The proxy acts as both a client and a server in the sense that it is viewed as a server from the perspective of the client and vice versa. As a result it has many of the responsibility listed above.
+	The proxy is responsible for taking all incoming requests from the client and forwarding them to the destination server. The proxy server must also cache web objects sent, via its self, from the server to the client. This makes use of the \texttt{If-Modified-Since} and \texttt{Last-Modified} header fields to allow the proxy to have the most up to date version of any object in its cache. The proxy acts as both a client and a server in the sense that it is viewed as a server from the perspective of the client and vice versa. As a result it has many of the responsibility listed above.
 
 \subsection{Features}
 
@@ -234,16 +234,28 @@ A number of features were implemented. The ability to use both TCP and UDP was i
 
 	\subsubsection{Multi-threading:} \label{thread}
 
-	Multi-threading, implemented via \verb|goroutines|, allows the server (as well as the proxy) to be parallelized. Effectively, this feature allows the server to handle multiple TCP connections at the same time (while also serving clients via UDP connections). This makes the use of persistent TCP feasible as it allows the server to keep listening for new TCP connections even while handling a long persistent communication with the client.
+	Multi-threading, implemented via \texttt{goroutines}, allows the server (as well as the proxy) to be parallelized. Effectively, this feature allows the server to handle multiple TCP connections at the same time (while also serving clients via UDP connections). This makes the use of persistent TCP feasible as it allows the server to keep listening for new TCP connections even while handling a long persistent communication with the client.
 
 	\subsubsection{RTT timer:}
 
-	This feature allows the client to time how long it takes to recieve the response to a message. This could be useful for time out periods or for comparing different types and combinations of communication schemes i.e. TCP vs UDP, persistent vs non-persistent, and proxy vs no proxy.
+	This feature allows the client to time how long it takes to receive the response to a message. This could be useful for time out periods or for comparing different types and combinations of communication schemes i.e. TCP vs UDP, persistent vs non-persistent, and proxy vs no proxy.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{DETAILED IMPLEMENTATION}
 
 HTTP is a large, complex protocol that has evolved over many years. As a result only a subset of the features was implemented in this system. The implemented features will be discussed in detail and important unimplemented features will be mentioned. Additionally the Go language and the implications of implementing the system in this language will be discussed.
+
+	\subsection{Client}
+
+	\subsection{Server}
+
+	The server accepted the following requests: GET, HEAD, POST, PUT and DELTE. These were considered to be the most important for demonstrating the HTTP protocol. The GET, HEAD and POST methods were the original three methods in HTTP/1.0, while the PUT and DELTE methods provide the missing functionality for the CRUD operations which are very important for many applications which make use of RESTful APIs \cite{guinard}. Other methods that would be useful are those in \tabref{httpreqs}. The PATCH method in particular would be an important addition as it allows much more flexible Update operations by facilitating partial updates of files. This means that when a client wishes to overwrite part of a file they do not need to send the whole file to the server, rather they send only the part they wish to update which saves bandwidth. The OPTIONS method is very useful for allowing clients to query which methods the server accepts. This would reduce the amount of \texttt{400 Bad Request} responses as a result of requests not being understood. These methods were not added due to time constraints.
+
+	The server is capable of using the following responses: \texttt{505 HTTP Version Not Supported}, \texttt{404 Not Found}, \texttt{400 Bad Request}, \texttt{304 Not Modified}, \texttt{301 Moved Permanently}, and \texttt{200 OK}. These methods cover the majority of common situations. However, some key methods are missing. The \texttt{302 Found} method is useful in real world systems where resources are temporarily moved. Additionally a wider range of 2xx responses are also useful as they give the client more information about the action that has been taken by the server in addition to the fact that their request was successful. Once again, these were not added due to time constraints.
+
+	Headers
+
+	\subsection{Proxy}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{DIVISION OF WORK}
@@ -398,13 +410,16 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 
 \begin{thebibliography}{1}
 
-\bibitem{kurose} Kurose, J F, Ross K W (2013). \emph{Computer networking: a top-down approach.} Boston, Pearson. pp 83 - 115.
+\bibitem{kurose} Kurose J F, Ross K W. \emph{Computer networking: a top-down approach.} Boston, Pearson. 2013. pp 83 - 115.
 
 \bibitem{rfc7230} Fielding R, Reschke J. `Hypertext Transfer Protocol (HTTP/1.1): Message Syntax and Routing.' IETF, RFC June 2014. [online] Available: \url{https://tools.ietf.org/html/rfc7230}
 
 \bibitem{rfc1945} Berners-Lee T, Fielding R, Frystyk H. `Hypertext Transfer Protocol -- HTTP/1.0' IETF, RFC May 1996. [online] Available: \url{https://tools.ietf.org/html/rfc1945}
 
+\bibitem{guinard}   Guinard D, Trifa V (2009). \emph{Towards the Web of Things: Web Mashups for Embedded Devices.} Workshop on Mashups, Enterprise Mashups and Lightweight Composition on the Web (MEM 2009), in proceedings of WWW (International World Wide Web Conferences). Madrid, Spain. April 2009.  
+
 \bibitem{net} The Go Programming Language. \emph{Package net.} The Go Programming Language. Available: \url{https://golang.org/pkg/net/#Dial}.
+
 
 \end{thebibliography}
 
