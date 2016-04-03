@@ -348,7 +348,7 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 	
 	\subsection{Division of Report Writing}
 	
-		The report writing was divided in the same manor as the code, each engineer was responsible for writing about the sections of code that they implemented. The theoretical aspect of the report was divided equally by the aspects that each engineer felt most comfortable contributing to. The introduction, background, HTTP description, system overview were all done by James Allignham while the results, critical analysis, conclusion and division of work were all done by Devin Taylor.
+		The report writing was divided in the same manor as the code, each engineer was responsible for writing about the sections of code that they implemented. The theoretical aspect of the report was divided equally by the aspects that each engineer felt most comfortable contributing to. The introduction, HTTP description, system overview were all done by James Allignham while the results, critical analysis, conclusion and division of work were all done by Devin Taylor.
 	
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -441,6 +441,18 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 	% subsubsection basic_client_server_http_requests_and_responses (end)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{CRITICAL ANALYSIS}
+		
+		The system is a fully functional, stable and well constructed solution. The presented system implements all functionality stipulated in project brief, that being the following: web server, web client, proxy server, multithreading, persistent and non-persistent connection types, TCP and UDP, the use of Wireshark to obtained results and the use of a timer to obtain RTT values for different connection types. \\
+
+		Despite the solution being fully functional there are three weaknesses. Firstly, the primary weakness of the system is that once the client establishes a connection with the proxy, all future computation (i.e. proxy communication with the server) until the response reaches the client takes place in a thread established by the proxy. Despite Go multithreading being able to handle thousands of threads at the same time with very little computational overhead, this is not the ideal implementation if the infrastructure utilising the proxy were to be on the level of a large scale business. Secondly, another design constraint was accepted when it was decided to only implemented TCP communication when the client was communicating with the server via the proxy. This was primarily due to the above mentioned problem. \\
+		
+		Thirdly, another minor weakness, which was primarily due to time constraints, was the inability to interact with web forms. This is due to the fact that JavaScript is often implemented in order to auto-generate the correctly structured POST message for the form. As a result of this a well rounded implementation of this could not be presented and a design decision was taken to omit this aspect. Despite this, the POST method still works when generating a basic example between the client and server.  \\
+		
+		There are multiple aspect of the system that are subject to improvements. Initially, creating a smart way of mapping client and sever IP addresses on the proxy will allow for the above mentioned thread problem to be fixed. This would be the primary priority of the project. Also, allowing the proxy to implement UDP communication would better the functionality range of the system. The other aspect of improvement would be increasing the overall scope of the project. Expansions to the system could be in the form of adding support for https and not only http and increasing the range of requests and responses to all those mentioned in Tables~\ref{httpreqs} and \ref{httpresps}.
+	
+	\subsection{Opportunities}
+	
+		
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
