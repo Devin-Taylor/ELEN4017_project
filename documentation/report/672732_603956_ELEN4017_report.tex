@@ -52,7 +52,9 @@ Witwatersrand, Private Bag 3, 2050, Johannesburg, South Africa}
 %\thispagestyle{empty}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{INTRODUCTION}
+\section{INTRODUCTION} \label{intro}
+
+Hyper Text Transfer Protocol (HTTP) is a fundamental component of the World Wide Web \cite{kurose}. Understanding HTTP is vital for gaining a well rounded and deep understanding of not only the web and Internet but networking in general. Through understanding HTTP an understanding of protocols as well as the Internet Protocol (IP) networking stack. A collection of web applications, including a client, a server and a proxy server, is to be implemented using a limited subset of HTTP. The goal of this project is to, as closely as possible, match the real world use case for HTTP. The design, implementation and testing of the web application suite is presented in this report along with a critical analysis and recommendations for future improvement of the system. The group work aspects of the project are also discussed. 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{BACKGROUND}
@@ -201,7 +203,7 @@ A typical HTTP communication can be described as follows:
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{SYSTEM OVERVIEW}
+\section{SYSTEM OVERVIEW} \label{sysover}
 
 	\subsection{System Architecture}
 
@@ -241,6 +243,8 @@ A number of features were implemented. The ability to use both TCP and UDP was i
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{DETAILED IMPLEMENTATION}
+
+HTTP is a large, complex protocol that has evolved over many years. As a result only a subset of the features was implemented in this system. The implemented features will be discussed in detail and important unimplemented features will be mentioned. Additionally the Go language and the implications of implementing the system in this language will be discussed.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{DIVISION OF WORK}
@@ -381,9 +385,9 @@ A number of features were implemented. The ability to use both TCP and UDP was i
 
 \begin{thebibliography}{1}
 
-\bibitem{rfc7230} Fielding R, Reschke J. `Hypertext Transfer Protocol (HTTP/1.1): Message Syntax and Routing.' IETF, RFC June 2014. [online] Available: \url{https://tools.ietf.org/html/rfc7230}
-
 \bibitem{kurose} Kurose, J F, Ross K W (2013). \emph{Computer networking: a top-down approach.} Boston, Pearson. pp 83 - 115.
+
+\bibitem{rfc7230} Fielding R, Reschke J. `Hypertext Transfer Protocol (HTTP/1.1): Message Syntax and Routing.' IETF, RFC June 2014. [online] Available: \url{https://tools.ietf.org/html/rfc7230}
 
 \bibitem{rfc1945} Berners-Lee T, Fielding R, Frystyk H. `Hypertext Transfer Protocol -- HTTP/1.0' IETF, RFC May 1996. [online] Available: \url{https://tools.ietf.org/html/rfc1945}
 
