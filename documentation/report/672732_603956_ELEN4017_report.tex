@@ -375,8 +375,16 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 		
 		The client code was mainly centralised around establishing a connection with either the web server or the proxy server. Once this connection was established it needed to ensure that all information was read from the server before analysing the received information. Upon analysis of this information, the client could be required to establish further connections to retrieve images and other sources before saving the file to a temporary directory to be launched. \\
 		
-		\subsubsection*{Establishing The Connection:} The type of connection that is established by the client is dependant on what protocol configuration setting was specified by the client. 
+		\subsubsection*{Establishing The Connection:} The type of connection that is established by the client is dependant on what protocol configuration setting was specified by the client. Despite this the \texttt{net} package in Go is able to accept either TCP or UDP when creating a network connection \cite{net}. The connection was established as can be seen in Listing~\ref{lst:client_conn} of Appendix~\ref{app:client}. 
 		
+		\subsubsection*{Retrieving Information:} In order to determine whether or not all the information had been obtained from the server it was required that initially the client would read a large packet from the connection. In this packet the client code would search for either the presence of either the header line \texttt{Transfer-Encoding:Chunked} or \texttt{Content-Length:\textit{<bytes>}}. The presence of either of these two header lines meant that the server had divided the sent file into multiple packets. \\
+		
+		In order to read multiple packets it was necessary to continuously loop over the read function until all the information had been obtained. Determining when to exit this loop was aided by the above mentioned header lines. Firtly the \texttt{Transfer-Encoding} is a header line specific to HTTP/1.1 which ensures that an End-Of-File character, \texttt{\textbackslash r\textbackslash n0\textbackslash r\textbackslash n\textbackslash r\textbackslash n}, will appear in the last packet. Therefore, searching each packet for this character provided the required knowledge. Secondly, the \texttt{Content-Length} provided knowledge of the size of the attached body. Therefore, utilising this and being able to manually calculate the size of the header lines meant that the packets could be read from the connection and continually subtracted from the running tally of remaining bytes until such time that the running tally became negative. The implementation of these two concepts can be seen in Listing~\ref{lst:client_read} of Appendix~\ref{app:client}. 
+		
+		\subsubsection*{Analysing Received Information:} The next important aspect of the client was determining whether or not the received file contained any references to other files that were imperative to the received file forming correctly. It was assumed that all references to other files would begin with "src=http://" in the base HTML file, all other file references were ignored as they would be beyond the scope of the project.\\
+		
+		String manipulation was used to determine the presence of these sources. If there were any sources present the \texttt{retrieveSources()} function, see Listing~\ref{lst:client_ret} of Appendix~\ref{app:client}, would deconstruct the referenced strings through the use of regular expressions and the occurrence of special characters. From the deconstruction the function constructs a map of host name to file extension on the hosts server. The map would then be used to iterate over all elements in the map and retrieve them as described in the above sections.
+				
 			
 	
 % \lstinputlisting[language=go, style=go, breaklines=true]{../../src/client/client.go}
@@ -396,6 +404,9 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 \bibitem{rfc1945} Berners-Lee T, Fielding R, Frystyk H. `Hypertext Transfer Protocol -- HTTP/1.0' IETF, RFC May 1996. [online] Available: \url{https://tools.ietf.org/html/rfc1945}
 
 \bibitem{guinard}   Guinard D, Trifa V (2009). \emph{Towards the Web of Things: Web Mashups for Embedded Devices.} Workshop on Mashups, Enterprise Mashups and Lightweight Composition on the Web (MEM 2009), in proceedings of WWW (International World Wide Web Conferences). Madrid, Spain. April 2009.  
+
+\bibitem{net} The Go Programming Language. \emph{Package net.} The Go Programming Language. Available: \url{https://golang.org/pkg/net/#Dial}.
+
 
 \end{thebibliography}
 
@@ -520,6 +531,15 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 		\lstinputlisting[language=go, caption=Struct for configuration settings, label={lst:config_struct}, style=go, breaklines=true, firstline=10, lastline=14]{../../src/lib/config_settings.go}
 		
 		\lstinputlisting[language=go, caption=Manipulation of configuratuion settings, label={lst:config_edit}, style=go, breaklines=true, firstline=36, lastline=62]{../../src/lib/config_settings.go}
+		
+	\subsection{Client}
+	\label{app:client}
+	
+		\lstinputlisting[language=go, caption=Establishing client sever initial connection, label={lst:client_conn}, style=go, breaklines=true, firstline=66, lastline=68]{../../src/client/client.go}
+		
+		\lstinputlisting[language=go, caption=Client read from connection, label={lst:client_read}, style=go, breaklines=true, firstline=113, lastline=148]{../../src/client/client.go}
+		
+		\lstinputlisting[language=go, caption=Client retrieve sources function, label={lst:client_ret}, style=go, breaklines=true, firstline=247, lastline=266]{../../src/client/client.go}
 
 	% subsubsection wireshark_results (end)
 
