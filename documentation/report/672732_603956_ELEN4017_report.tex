@@ -118,7 +118,7 @@ A typical HTTP communication can be described as follows:
 	In HTTP version 1.0 (HTTP/1.0), all communication takes the form shown above \cite{rfc1945}. In other words a new TCP connection is made every time the client wants to make a request to the server. However, this approach has its disadvantages. The primary disadvantage is that it is wasteful to repeatedly make new connections when more than one request is going to be made. This is because setting up the TCP connection requires the three way handshake which is a time consuming operation. The solution to this, which was implemented in HTTP version 1.1 (HTTP/1.1), was to allow connections to persist for multiple request-response pairs \cite{rfc7230}. This is accomplished using the \emph{connection} header field, which can take on the values \emph{close} and \emph{keep-alive} for non-persistent and persistent connections respectively.
 
 	\subsection{Proxy Servers and Caching}
-
+	\label{sec:proxy}
 	Another limitation of HTTP that results from its statelessness is that it does not have a mechanism for `smart' communication. Consider the following situation:
 
 	\begin{enumerate}
@@ -151,7 +151,7 @@ A typical HTTP communication can be described as follows:
 
 	\begin{itemize}
 		\item The client request message was received by the server and interpreted correctly.
-		\item The server response message was received by the client in conjunction with the necessary data and interpreted correctly.
+		\item The server response message was received by the client, in conjunction with the necessary data, and interpreted correctly.
 		\item The client was able to respond to the contents of the servers message by either following a link to the actual site or requesting further information in the form of sources.
 		\item The server was capable of returning conditional error codes if necessary.
 		\item The client was able to interact with the proxy.
@@ -162,13 +162,52 @@ A typical HTTP communication can be described as follows:
 	\subsection{Basic Client Server HTTP Requests and Responses} % (fold)
 	\label{sub:basic_client_server}
 		
-		As mentioned in Table~\ref{httpreqs} there are a set of commonly user HTTP requests. For the basis of the project only GET, HEAD, POST, PUT and DELETE were required to be implemented. The use of Wireshark allowed for the message trace between the client and server to be followed. It also provides detailed insight into the communications by being able to analyse the messages being sent and received.
+		As mentioned in Table~\ref{httpreqs} there are a set of commonly user HTTP requests. For the basis of the project only GET, HEAD, POST, PUT and DELETE were required to be implemented. The use of Wireshark allowed for the message trace between the client and server to be followed. It also provides detailed insight into the communications by being able to analyse the messages being sent and received. For all the examples provided below assume that the client IP address is 10.0.0.148 and the server IP address is 10.0.0.243. These IP addresses will provide insight into the trace observed between client and server when they communicate.
 		
-		\subsubsection*{The GET Request}: With reference to Figure~\ref{fig:basic_get} of Appendix~\ref{sub:wireshark_results} the client sends a GET request to the server, to which the server responds with an OK message containing the contents of the file that was requested. The OK message symbolises that the server was able to access the requested file. The second get message sent for \texttt{/test.jpg} is due to the fact that the returned file contained an image and as a result the client is able to detect the presence of sources and request them from the applicable server. \\
+		\subsubsection*{The GET and HEAD Methods:} With reference to Figure~\ref{fig:basic_get} of Appendix~\ref{sub:wireshark_results} the client sends a GET request to the server, to which the server responds with an OK message containing the contents of the file that was requested. The OK message symbolises that the server was able to access the requested file. The second GET message sent for \texttt{/test.jpg} is due to the fact that the returned file contained an image and as a result the client is able to detect the presence of sources and request them from the applicable server. In this example the image was hosted on the same server. \\
 		
-		An example of the GET message sent can be seen in Figure~\ref{fig:basic_get_message} of Appendix~\ref{sub:wireshark_results}. The aspects of interest are the inclusion of the required URI as well as the method (GET). This is contrary to what is observed in Figure~\ref{fig:basic_get_response} whereby there is no mention of a URI but there is the inclusion of the \texttt{Data} section which contains the requested content. These two images highlight the fundamental differences between the HTTP messages sent by the client and the HTTP messages sent by the server.
+		An example of the GET message sent can be seen in Figure~\ref{fig:basic_get_message} of Appendix~\ref{sub:wireshark_results}. The aspects of interest are the inclusion of the required URI in headers as well as the method (GET) in the request line. This is contrary to what is observed in Figure~\ref{fig:basic_get_response} of Appendix~\ref{sub:wireshark_results} whereby there is no mention of a URI but there is the inclusion of the \texttt{Data} section, symbolising the entity body, which contains the requested content. These two figures highlight the fundamental differences between the HTTP messages sent by the client and the HTTP messages sent by the server. \\
 		
-		\subsubsection*{The HEAD Request}: 
+		Fundamentally the communication between the client and the server for the HEAD request is the same as the GET request. The only difference observed is that the response message from the server contains no entity body (\texttt{Data} section) but rather only the header information. \\
+		
+%		\subsubsection*{The HEAD Method:} 
+		
+		\subsubsection*{The POST and PUT Methods:} The post method differs from the above mentioned methods in the sense that the client includes an entity body in the request message sent to the server. As mentioned in Table~\ref{httpreqs} the POST method is commonly used for interacting with forms, hence the body that's included in the client request message contains the information that needs to be submitted to the form. An example of the trace between the client and the server takes on the same form as mentioned above, this can be seen in Figure~\ref{fig:basic_post} of Appendix~\ref{sub:wireshark_results}. \\
+		
+%		\subsubsection{The PUT Method:}
+		 The PUT method has the same face value structure as the POST method with regards to the trace observed between the client and server. The two methods only differ in how the client handles the requested URI as well as the entity body included in the client's request message. These differences are detailed in Table~\ref{httpreqs}.
+		 
+		 \subsubsection*{The DELETE Method:} The DELETE method also has the same trace structure as the above mentioned methods, see Figure~\ref{fig:basic_delete} of Appendix~\ref{sub:wireshark_results}, whereby the client makes a request and the server responds to the request. The difference with the DELETE method is that the URI included in the request message links to the file on the server that the client wishes to remove. The server subsequently responds to the client whether or not it was able to remove the file. 
+	 
+	 \subsection{Client Server HTTP Requests and Responses Via Proxy}	
+	 
+		 The communication observed between the client and server, via the proxy, follows the same basic structure in the sense that a request message is sent by the client and a response message is received back. The communication differs in the sense that the proxy acts as an intermediary relaying the message from the client to the server and the server to the client. The details pertaining to how this is accomplished are detailed in Section~\ref{sec:proxy}. A test was conducted on three different computers on the same network in order to recreate the trace sequence observed with a proxy being used. The client was represented on \texttt{192.168.1.103}, the proxy on \texttt{192.168.1.104} and the server of \texttt{192.168.1.105}. \\
+		 
+		 The trace sequence observed for a GET message can be seen if Figure~\ref{fig:proxy_new} of Appendix~\ref{sub:wireshark_results}. An initial GET request was sent by the client to the proxy for the \texttt{/index.html} file. The message sent to the proxy can be seen in Figure~\ref{fig:proxy_new_client} of Appendix~\ref{sub:wireshark_results}, the important aspect of this message to note is the inclusion of the servers IP address under the host heading. Once the proxy receives the request it checks if the requested file was saved in its cache, which it was not, and forwarded the request to server. The server then retrieves the requested file, which is passed by to the client via the proxy. The response from the server contains an \texttt{Last-Modified} header line which is fundamental for the caching of the proxy, this can be seen in Figure~\ref{fig:proxy_server} of Appendix~\ref{sub:wireshark_results}. \\
+		 
+		 The above experiment was repeated again expect this time the proxy has added the \texttt{/index.html} file into its cache. The trace sequence can be observed in Figure~\ref{fig:proxy_cache} of Appendix~\ref{sub:wireshark_results}. It can be noted that the sequence is the same as described above except the response code from the server is a \texttt{304 Not Modified}. This occurs because the proxy registered that the requested \texttt{/index.html} file was in its cache and forwarded an \texttt{If-Modified-Since} header line in its request to the server, this date corresponds to the date returned from the server in the previous example. A comparison between the proxy GET request before and after caching can be seen in Figure~\ref{fig:proxy_comparrison} of Appendix~\ref{sub:wireshark_results}. Due to the \texttt{304} response from the server the proxy then retrieves the requested file from its cache and forwards a copy of this to the client.
+	
+	\subsection{Server Error Codes}
+	
+		Additional tests were also conducted between the client and server to ensure that all the server error codes were implemented correctly. The specific errors that were implemented were provoked as follows:
+		
+		\begin{table}[htbp]
+			\centering
+			\caption{Different methods for invoking server response errors}
+			\label{tab:errors_responses}
+			\begin{tabular}{p{0.3\columnwidth}| p{0.6\columnwidth}}
+				\hline
+				\textbf{Status Code} & \textbf{Provocation}\\ \hline
+				301 & Request a file that had been moved to a new location on the local server \\
+				400 & Make a request that did not fall within the range of accepted/implemented requests \\
+				404 & Request a file that did not exist on the server \\
+				505 & Alter the HTTP version used in the request message \\
+				\hline
+			\end{tabular}
+		\end{table}
+		
+		The corresponding server responses can be seen in the trace sequences in Figure~\ref{fig:server_error} of Appendix~\ref{sub:wireshark_results}. It can be noted that the \texttt{301} response message invoked a new request to be generated by the client to the location that the file had been moved to. The client is able to make the new request as a result of the \texttt{Location} header line returned by the server in the header field, this can be seen in Figure~\ref{fig:301} of Appendix~\ref{sub:wireshark_results}.
+		 
 	% subsubsection basic_client_server_http_requests_and_responses (end)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{CRITICAL ANALYSIS}
@@ -195,8 +234,9 @@ A typical HTTP communication can be described as follows:
 \end{thebibliography}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\clearpage
 \onecolumn
+\clearpage
+\newpage
 \appendix
 \section{Results supporting information} % (fold)
 \label{sec:results}
@@ -206,33 +246,100 @@ A typical HTTP communication can be described as follows:
 	\subsection{Wireshark results} % (fold)
 	\label{sub:wireshark_results}
 	
-		\begin{figure}
+		\begin{figure}[h!]
 			\centering
 			\includegraphics[width=\columnwidth]{resources/get_html}
 			\caption{Computer interaction for GET request}
 			\label{fig:basic_get}
 		\end{figure}
 		
-		\begin{figure}
+		\begin{figure}[h!]
 			\centering
 			\includegraphics[width=\columnwidth]{resources/message_get_html}
 			\caption{GET request message}
 			\label{fig:basic_get_message}
 		\end{figure}
 		
-		\begin{figure}
+		\begin{figure}[h!]
 			\centering
 			\includegraphics[width=\columnwidth]{resources/message_get_response_html}
 			\caption{GET response message}
 			\label{fig:basic_get_response}
 		\end{figure}
 		
-%		\begin{figure}
-%			\centering
-%			\includegraphics[width=\columnwidth]{resources/301.png}
-%			\caption{Computer interaction for 301 status code}
-%			\label{fig:301}
-%		\end{figure}
+		\begin{figure}[h!]
+			\centering
+			\includegraphics[width=\columnwidth]{resources/post_request}
+			\caption{POST trace between client and server}
+			\label{fig:basic_post}
+		\end{figure}
+		
+		\begin{figure}[h!]
+			\centering
+			\includegraphics[width=\columnwidth]{resources/delete_request}
+			\caption{DELETE trace between client and server}
+			\label{fig:basic_delete}
+		\end{figure}
+		
+		\begin{figure}[h!]
+			\centering
+			\includegraphics[width=\columnwidth]{resources/delete_request_message}
+			\caption{DELETE request message}
+			\label{fig:basic_delete_message}
+		\end{figure}
+		
+		\begin{figure}[h!]
+			\centering
+			\includegraphics[width=\columnwidth]{resources/proxy_new}
+			\caption{GET request for proxy with no cache saved}
+			\label{fig:proxy_new}
+		\end{figure}
+		
+		\begin{figure}[h!]
+			\centering
+			\includegraphics[width=\columnwidth]{resources/proxy_new_client}
+			\caption{GET request message for client to proxy with no cache saved}
+			\label{fig:proxy_new_client}
+		\end{figure}
+		
+		\begin{figure}[h!]
+			\centering
+			\includegraphics[width=\columnwidth]{resources/proxy_server}
+			\caption{GET response message from server to proxy}
+			\label{fig:proxy_server}
+		\end{figure}
+		
+		\begin{figure}[h!]
+			\centering
+			\includegraphics[width=\columnwidth]{resources/proxy_cache}
+			\caption{GET request message for client to proxy with saved cache}
+			\label{fig:proxy_cache}
+		\end{figure}
+		
+		\begin{figure}[h!]
+			\centering
+			\subfloat[Proxy GET before caching]{\includegraphics[width = 0.46\columnwidth]{resources/proxy_new_get}} \hspace{1cm}
+			\subfloat[Proxy GET after caching]{\includegraphics[width = 0.46\columnwidth]{resources/proxy_get_cache}}
+			\caption{Difference in proxy request messages depending on status of cache}
+			\label{fig:proxy_comparrison}
+		\end{figure}
+		
+		\begin{figure}[h!]
+			\centering
+			\subfloat[301]{\includegraphics[width =\columnwidth]{resources/301}} \\
+			\subfloat[400]{\includegraphics[width = \columnwidth]{resources/400}} \\
+			\subfloat[404]{\includegraphics[width = \columnwidth]{resources/404}} \\
+			\subfloat[505]{\includegraphics[width = \columnwidth]{resources/505}} \\
+			\caption{Different server error response codes}
+			\label{fig:server_error}
+		\end{figure}
+		
+		\begin{figure}[h!]
+			\centering
+			\includegraphics[width=\columnwidth]{resources/301_response_message}
+			\caption{301 Server response message with location header field}
+			\label{fig:301}
+		\end{figure}
 
 
 	% subsubsection wireshark_results (end)
