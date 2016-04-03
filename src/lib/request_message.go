@@ -10,6 +10,12 @@ type RequestMessage struct {
 	EntityBody string
 }
 
+func (rm *RequestMessage) SetRequestLine(Method string, Url string, Version string) {
+	rm.Method = Method
+	rm.Url = Url
+	rm.Version = Version
+}
+
 func NewRequestMessage() *RequestMessage {
     return &RequestMessage{HeaderLines: make(map[string]string)}
 }
@@ -42,12 +48,6 @@ func (rm *RequestMessage) SetHeaders(host string, connection string, userAgent s
 	rm.HeaderLines["Connection"] = connection
 	rm.HeaderLines["User-agent"] = userAgent
 	rm.HeaderLines["language"] = language
-}
-
-func (rm *RequestMessage) SetRequestLine(Method string, Url string, Version string) {
-	rm.Method = Method
-	rm.Url = Url
-	rm.Version = Version
 }
 
 func (rm *RequestMessage) SetEntityBody(body string) {
