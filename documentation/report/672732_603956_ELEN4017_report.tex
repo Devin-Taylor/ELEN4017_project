@@ -649,12 +649,13 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 	\label{app:other_func}
 		\begin{table}[htbp]
 			\centering
+			\scriptsize
 			\caption{Different methods for invoking server response errors}
 			\label{tab:functions}
-			\begin{tabular}{p{0.2\columnwidth}| p{0.2\columnwidth} | p{0.1\columnwidth} | p{0.5\columnwidth}}
+			\begin{tabular}{p{0.2\columnwidth}| p{0.2\columnwidth} | p{0.1\columnwidth} | p{0.45\columnwidth}}
 				\hline
 				\textbf{Function Name} & \textbf{File} & \textbf{Author} & \textbf{Description} \\ \hline
-				newRoundTripTimer & timer.go & DT & Create new timer object \\
+				newRoundTripTimer & timer.go & DT & Create new timer struct object \\
 				loadTimerMap & timer.go & DT & Load pre-existing timer values \\
 				startTimer & timer.go & DT & Start the timer \\
 				stopTimer & timer.go & DT & Stop the timer and calculate duration \\
@@ -668,9 +669,39 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 				DecomposeRequest & decompose\_request.go & JA & Extract the HTTP method, desired URL, HTTP version, header lines, and body from the client request message \\
 				DecomposeResponse & decompose\_response.go & DT & Extract the HTTP version, status code, status message, header lines, and body from the server response message \\
 				FileExists & file\_exists.go & JA & Determine if the file at the desired path exists \\
-				
-								
-				
+				NewRequestMessage & request\_message.go & DT & Create new request message struct object \\
+				SetRequestLine & request\_message.go & DT & Set the request line of the request message object \\
+				SetHeaders & request\_message.go & DT & Set the header lines of the request message object \\
+				SetEntityBody & request\_message.go & DT & Set the entity body of the request message object \\
+				SetRequestMessage & request\_message.go & DT & Call the above three set methods on the request message object \\
+				ToString & request\_message.go & DT & Convert the request message object into a string \\
+				ToBytes & request\_message.go & DT & Convert the request message string into bytes \\
+				NewReponseMessage & response\_message.go & JA & Create a new response message struct object \\
+				ToString & response\_message.go & JA & Convert the response message object to a string \\
+				ToBytes & response\_message.go & JA & Convert response message string to bytes \\
+				loadMap & map\_handler.go & DT & Load text file from server into a map \\
+				saveMap & map\_handler.go & DT & Save new map to the server as a text file \\
+				handleRequest & client.go &	DT & Responsible for handling the request to the server dependant on configuration settings \\
+				writeReceivedToFile & client.go & DT &	Write the received file from the server to a temporary file for launching \\
+				getRedirectionLocation & client.go &	DT & If the server response is a 301/302 then determine the new location of the file from the response message \\
+				getUserInputs & client.go &	DT & Get the user to input the HTTP method, URL and body if the method was PUT or POST \\
+				getFileName & client.go &	DT & Retrieve the file name from the entire URL string \\
+				retrieveSources & client.go &	DT & Extract all the sources from the body of the response message and place them in a map \\
+				printToConsole & client.go &	DT & Print the server response message to console \\
+				getHeaderSize & client.go &	DT & Get the size of the response message headers in bytes \\
+				startTCPServer & server.go & JA & Establish a TCP connection with the client \\
+				startUDPServer & server.go & JA & Establish a UDP connection with the client \\
+				handleUDPClient & server.go & JA & 	Perform read and write functionality for UDP client \\
+				handleTCPClient & server.go & JA & Perform read and write functionality for TCP client \\
+				composeResponse & server.go & JA & Compose a new server response message based on the HTTP method and URL supplied by the client request message \\
+				loadMovesMap & server.go & JA & Load The map containing the previous and current location of all objects that have been moved \\
+				handleClient & proxy.go & JA & Handle all read and write functionality for proxy-client interface \\
+				getNewResponse & proxy.go & JA \& DT & Compose a new response message depending of the status of the cache \\
+				checkInCache & proxy.go & JA & Checking if the file exists in the proxy cache \\
+				modifyHeaders & proxy.go & DT & Modify the headers based on last modified information from cache \\
+				compileNewRequest & proxy.go & DT & Compile a new request message \\
+				handleServer & proxy.go & DT & Handle all read and write functionality for proxy-server interface \\
+				getHeaderSize & proxy.go & JA & Get the size of the message header field \\				
 				\hline
 			\end{tabular}
 		\end{table}
