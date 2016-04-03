@@ -268,6 +268,19 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{DIVISION OF WORK}
 
+	\subsection{Overall Project Management}
+	
+		The overall project was managed through the use of time management application called Trello. Trello allows job cards to be created and assigned to a member of the group. It has multiple features such as allocating cards as bugs, providing deadlines for cards and allowing for files to be uploaded and shared. All these aspects of the application were used continuously throughout the project. A screen shot of the board that was used for the project can be seen in Figure~\ref{fig:trello} of Appendix~\ref{app:time_man}. \\
+		
+		The code aspect of the project was managed using git and GitHub. The integration capabilities offered by git meant that the team did not necessarily need to work together all the time, which increased the rate at which work was developed and ultimately lead to the deadline being met. 
+
+	\subsection{Division of Code}
+	
+		The division of work was such that each member of the group contributed equally to the outcome of the entire project. This was achieved by designating specific subsystems to each member of the group. Devin Taylor was responsible for handling the client code and all associated common functionality, while James Allignham was responsible for handling all the sever code and associated common functionality. From these two bases both engineers contributed equally to the proxy as the majority of the proxy was composed of the subsystems. Table~\ref{tab:functions} in Appendix~\ref{app:other_func}. A screen shot of the GitHub contributions to the project can be seen in Figure~\ref{fig:github} of Appendix~\ref{app:other_func}, this figure emphasises the equal contributions of each engineer. 
+	
+	\subsection{Division of Report Writing}
+	
+		The report writing was divided in the same manor as the code, each engineer was responsible for writing about the sections of code that they implemented. The theoretical aspect of the report was divided equally by the aspects that each engineer felt most comfortable contributing to. The introduction, background, HTTP description, system overview were all done by James Allignham while the results, critical analysis, conclusion and division of work were all done by Devin Taylor.
 	
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -422,7 +435,7 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 	
 	\subsection{All Other Common Functionality}
 	
-		The above mentioned sections were described in detail as they are fundamental to the functionality of the system. The other common functions implemented in the project are described in brief in Table~\ref{tab:functions}.
+		The above mentioned sections were described in detail as they are fundamental to the functionality of the system. The other common functions implemented in the project are described in brief in Table~\ref{tab:functions} of Appendix~\ref{app:other_func}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -593,7 +606,7 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 		\lstinputlisting[language=go, caption=Conditional GET, label={lst:proxy_cond}, style=go, breaklines=true, firstline=59, lastline=77]{../../src/proxy/proxy.go}
 		
 	\subsection{Other Functionality}
-	
+	\label{app:other_func}
 		\begin{table}[htbp]
 			\centering
 			\caption{Different methods for invoking server response errors}
@@ -610,8 +623,24 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 				\hline
 			\end{tabular}
 		\end{table}
-		
 
+\clearpage
+\section{Time Management}
+\label{app:time_man}
+	\begin{figure}[h!]
+		\centering
+		\includegraphics[width=\columnwidth]{resources/trello_networks}
+		\caption{Screen shot of Trello board used}
+		\label{fig:trello}
+	\end{figure}
+	
+	\begin{figure}[h!]
+		\centering
+		\includegraphics[width=\columnwidth]{resources/github_code}
+		\caption{Screen shot of GitHub contributions}
+		\label{fig:github}
+	\end{figure}
+	
 % section results (end)
 
 \end{document}
