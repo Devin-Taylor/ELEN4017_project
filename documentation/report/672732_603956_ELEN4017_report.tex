@@ -72,7 +72,7 @@ A typical HTTP communication can be described as follows:
 	\item The client receives the HTTP response before the connection is closed.
 \end{enumerate}
 
-	\subsection{Request and Response Messages}
+	\subsection{Request and Response Messages} \label{formats}
 
 	HTTP is based on communication via request and response messages, both of which have specific formats and can take on a number of values. Both request and response messages contain three parts: the request/ response line, zero or more header lines and an optional body. The format of an HTTP request is shown in \figref{reqformat}. A number of common HTTP request methods are described in \tabref{httpreqs}. The format of an HTTP response is shown in \figref{respformat}. A number of common HTTP response codes are described in \tabref{httpresps}. 2xx responses indicate a success, 3xx responses indicate that client must submit a new request, 4xx responses indicate that the client is in error and 5xx responses indicate that the server is in error.
 
@@ -107,11 +107,11 @@ A typical HTTP communication can be described as follows:
 		\label{reqformat}
 	\end{figure}
 
-	\begin{table}[htbp]
+	\begin{table*}[tb]
 		\centering
 		\caption{Commonly used HTTP request methods}
 		\label{httpreqs}
-		\begin{tabular}{p{0.08\textwidth}|p{0.36\textwidth}}
+		\begin{tabular}{p{0.1\textwidth}|p{0.8\textwidth}}
 			\hline
 			\textbf{Method} & \textbf{Description} \\ \hline
 			GET & Request data from the specified URL \\
@@ -124,7 +124,7 @@ A typical HTTP communication can be described as follows:
 			PATCH & Request that the web server apply a partial change to the resource at the given URL \\
 			\hline
 		\end{tabular}
-	\end{table}
+	\end{table*}
 
 	\begin{figure}[htbp]
 	\centering
@@ -157,11 +157,11 @@ A typical HTTP communication can be described as follows:
 		\label{respformat}
 	\end{figure}
 
-	\begin{table}[htbp]
+	\begin{table*}[tb]
 		\centering
 		\caption{Commonly used HTTP response methods}
 		\label{httpresps}
-		\begin{tabular}{p{0.06\textwidth}|p{0.14\textwidth}|p{0.22\textwidth}}
+		\begin{tabular}{p{0.05\textwidth}|p{0.275\textwidth}|p{0.55\textwidth}}
 			\hline
 			\textbf{Code} & \textbf{Phrase} & \textbf{Meaning} \\ \hline
 			200 & OK & HTTP request successful \\
@@ -175,9 +175,9 @@ A typical HTTP communication can be described as follows:
 			505 & HTTP Version Not Supported & The server does not support the HTTP version of the request \\
 			\hline
 		\end{tabular}
-	\end{table}
+	\end{table*}
 
-	\subsection{Persistent and Non-persistent}
+	\subsection{Persistent and Non-persistent} \label{pvnp}
 
 	In HTTP version 1.0 (HTTP/1.0), all communication takes the form shown above \cite{rfc1945}. In other words a new TCP connection is made every time the client wants to make a request to the server. However, this approach has its disadvantages. The primary disadvantage is that it is wasteful to repeatedly make new connections when more than one request is going to be made. This is because setting up the TCP connection requires the three way handshake which is a time consuming operation. The solution to this, which was implemented in HTTP version 1.1 (HTTP/1.1), was to allow connections to persist for multiple request-response pairs \cite{rfc7230}. This is accomplished using the \emph{connection} header field, which can take on the values \emph{close} and \emph{keep-alive} for non-persistent and persistent connections respectively.
 
@@ -192,7 +192,7 @@ A typical HTTP communication can be described as follows:
 		\item The server responds by sending the exact same file to the client again.
 	\end{enumerate} 
 
-	The problem with the above situation is that the server is wasting time sending the client the file \verb|Foo.bar| again because no changes have been made to the file. As a result the server could be slower to respond to other clients. This also increases congestion on the uplink of the Local Area Network of the client. The solution is to make use of a Proxy server, also known as a web cache. In this situation all HTTP requests are sent to the proxy by default. The proxy then forwards requests to the destination servers. The proxy acting as an intermediary between the clients and server can now store files sent from a server to a client. Now when a client requests the same file in quick succession, the server need only send it once. This solves both problems: the server has a reduced load and the uplink traffic is also reduced. Additionally, because LANs usually have network speeds orders of magnitude larger than the uplink, the client gets the data faster. By making use of the \emph{Last-Modified} and \emph{If-Modified-Since} headers, the proxy can make sure that it always serves the client with the most up to date version of the requested file. This is accomplished with the \emph{Conditional-Get} request. 	
+	The problem with the above situation is that the server is wasting time sending the client the file \verb|Foo.bar| again because no changes have been made to the file. As a result the server could be slower to respond to other clients. This also increases congestion on the uplink of the Local Area Network of the client. The solution is to make use of a Proxy server (proxy), also known as a web cache. In this situation all HTTP requests are sent to the proxy by default. The proxy then forwards requests to the destination servers. The proxy acting as an intermediary between the clients and server can now store files sent from a server to a client. Now when a client requests the same file in quick succession, the server need only send it once. This solves both problems: the server has a reduced load and the uplink traffic is also reduced. Additionally, because LANs usually have network speeds orders of magnitude larger than the uplink, the client gets the data faster. By making use of the \emph{Last-Modified} and \emph{If-Modified-Since} headers, the proxy can make sure that it always serves the client with the most up to date version of the requested file. This is accomplished with the \emph{Conditional-Get} request. 	
 
 	\subsection{User Datagram Protocol}
 
@@ -200,7 +200,43 @@ A typical HTTP communication can be described as follows:
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{SYSTEM DESCRIPTION}
+\section{SYSTEM OVERVIEW}
+
+	\subsection{System Architecture}
+
+	As mentioned, the HTTP protocol follows the Client-Server model. This means that to properly demonstrate the implementation of HTTP, both a client and server are required. Additionally, in order to more extensively represent a real world application of HTTP, a proxy is required. All three of these systems have been implemented in the Go programming language developed by Google. It is a statically typed, imperative, garbage collected, compiled language. It was designed as a system programming language with specific support for networking and multi-threading.
+
+	\subsubsection{Client:}
+
+	The client is responsible for sending HTTP requests to the server. These requests are generated based on user input. This process involves creating the HTTP request in the correct format, as discussed in \secref{formats}, creating a TCP or UDP connection and then sending the request in byte format. The client then waits for a response from the server, decomposing the response into its elements various elements, mentioned in \secref{formats}, and taking an appropriate action based on the response type and contents.
+
+	\subsubsection{Server:}
+
+	The server is responsible for listening for both TCP and UDP connections. Once a connection of either kind is made, the server must handle the client which involves, in the case of TCP, creating a new socket for the communication, and in the case of either TCP or UDP, receiving the HTTP request. The HTTP request must then be decomposed into its elements, discussed in \secref{formats}. Based on the type of request and its contents, the server must take an appropriate action as well as compose and send a HTTP response. Then, in the case of non-persistent TCP connections only, the sever must close the connection.
+
+	\subsubsection{Proxy Server:}
+
+	The proxy is responsible for taking all incoming requests from the client and forwarding them to the destination server. The proxy server must also cache web objects sent, via its self, from the server to the client. This makes use of the \verb|If-Modified-Since| and \verb|Last-Modified| header fields to allow the proxy to have the most up to date version of any object in its cache. The proxy acts as both a client and a server in the sense that it is viewed as a server from the perspective of the client and vice versa. As a result it has many of the responsibility listed above.
+
+\subsection{Features}
+
+A number of features were implemented. The ability to use both TCP and UDP was implemented for the client and server. The ability to use both persistent and non-persistent TCP was implemented on the client, server and proxy. Multi-threading was implemented on the server and proxy allowing them to server multiple clients. The ability to track the round-trip-time (RTT) of a message was implemented on the client.
+
+	\subsubsection{TCP vs UDP:}
+
+	This feature allows the user of the client to select the underlying transport layer protocol to use. TCP has the advantage that it offers some robustness in the form of protection against packet loss and delay. On the other hand UDP offers a higher speed than TCP due to its lack of data reliability services. The server implements this feature in terms of the ability to listen for both TCP and UDP connections and handle each appropriately. 
+
+	\subsubsection{Persistent vs Non-persistent:}
+
+	The choice of persistent TCP over non-persistent TCP allows the communication between the client and the server to be sped up for sessions with more than one request. This speed up is a result of not having to perform the three-way handshake every time a request message is sent from the client to the server. This is implemented using the header fields discussed in \secref{pvnp} as well as Multi-threading discussed below in \secref{thread}.
+
+	\subsubsection{Multi-threading:} \label{thread}
+
+	Multi-threading, implemented via \verb|goroutines|, allows the server (as well as the proxy) to be parallelized. Effectively, this feature allows the server to handle multiple TCP connections at the same time (while also serving clients via UDP connections). This makes the use of persistent TCP feasible as it allows the server to keep listening for new TCP connections even while handling a long persistent communication with the client.
+
+	\subsubsection{RTT timer:}
+
+	This feature allows the client to time how long it takes to recieve the response to a message. This could be useful for time out periods or for comparing different types and combinations of communication schemes i.e. TCP vs UDP, persistent vs non-persistent, and proxy vs no proxy.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{DETAILED IMPLEMENTATION}
@@ -240,7 +276,7 @@ A typical HTTP communication can be described as follows:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{DESCRIPTION OF CODE}
 
-\lstinputlisting[language=go, style=go, breaklines=true]{../../src/client/client.go}
+%\lstinputlisting[language=go, style=go, breaklines=true]{../../src/client/client.go}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
