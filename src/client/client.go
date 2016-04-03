@@ -41,13 +41,12 @@ func main() {
 		config.Connection = "close"
 	}
 	// timer := newRoundTripTimer()
-	// timer.loadTimerMap("../../documentation/timer_map.txt")
+	// timer.loadTimerMap("../../documentation/timer_map1.txt")
 	// timer.startTimer()
 	handleRequest(method, url, body, host)
 	// timer.stopTimer()
 	// timer.addToTimer(config.Protocol + " " + config.Connection + " " + config.Proxy)
-	// timer.writeTimerToFile("../../documentation/timer_map.txt")
-	// fmt.Println(config.Protocol + " " + config.Connection + " " + config.Proxy)
+	// timer.writeTimerToFile("../../documentation/timer_map1.txt")
 }
 // function handles the majority of responsibility for the client - responsible for subsequent function calls
 // inputs - method: string that describes the HTTP method to be used
