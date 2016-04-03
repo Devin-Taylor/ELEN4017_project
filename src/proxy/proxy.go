@@ -44,6 +44,7 @@ func handleClient(conn net.Conn) {
 		}
 		// convert message to string and decompose it
 		message := string(buf[0:])
+		fmt.Println(message)
 		method, url, version, headers, body := lib.DecomposeRequest(message)
 		var host string
 		// find the hosts address

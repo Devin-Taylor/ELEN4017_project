@@ -10,7 +10,8 @@
 \usepackage{listings} %for including code
 \usepackage{golang}  % include custom language for Go.
 \usepackage{gostyle} % include custom style for Go.
-
+\usepackage{graphicx}
+\usepackage{subfig}
 
 \pagestyle{plain}
 
@@ -146,6 +147,29 @@ A typical HTTP communication can be described as follows:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{RESULTS}
 
+	In order to test the integrity of the system it was necessary to observer the behaviour of the system between two computers over the same network. The primary criteria for testing the system was to ensure the following:
+
+	\begin{itemize}
+		\item The client request message was received by the server and interpreted correctly.
+		\item The server response message was received by the client in conjunction with the necessary data and interpreted correctly.
+		\item The client was able to respond to the contents of the servers message by either following a link to the actual site or requesting further information in the form of sources.
+		\item The server was capable of returning conditional error codes if necessary.
+		\item The client was able to interact with the proxy.
+		\item The proxy was able to interact with the client.
+		\item The proxy was able to interact with the cache and communicate the corresponding information with the client and server respectively.
+	\end{itemize}
+
+	\subsection{Basic Client Server HTTP Requests and Responses} % (fold)
+	\label{sub:basic_client_server}
+		
+		As mentioned in Table~\ref{httpreqs} there are a set of commonly user HTTP requests. For the basis of the project only GET, HEAD, POST, PUT and DELETE were required to be implemented. The use of Wireshark allowed for the message trace between the client and server to be followed. It also provides detailed insight into the communications by being able to analyse the messages being sent and received.
+		
+		\subsubsection*{The GET Request}: With reference to Figure~\ref{fig:basic_get} of Appendix~\ref{sub:wireshark_results} the client sends a GET request to the server, to which the server responds with an OK message containing the contents of the file that was requested. The OK message symbolises that the server was able to access the requested file. The second get message sent for \texttt{/test.jpg} is due to the fact that the returned file contained an image and as a result the client is able to detect the presence of sources and request them from the applicable server. \\
+		
+		An example of the GET message sent can be seen in Figure~\ref{fig:basic_get_message} of Appendix~\ref{sub:wireshark_results}. The aspects of interest are the inclusion of the required URI as well as the method (GET). This is contrary to what is observed in Figure~\ref{fig:basic_get_response} whereby there is no mention of a URI but there is the inclusion of the \texttt{Data} section which contains the requested content. These two images highlight the fundamental differences between the HTTP messages sent by the client and the HTTP messages sent by the server.
+		
+		\subsubsection*{The HEAD Request}: 
+	% subsubsection basic_client_server_http_requests_and_responses (end)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{CRITICAL ANALYSIS}
 
@@ -174,5 +198,46 @@ A typical HTTP communication can be described as follows:
 \clearpage
 \onecolumn
 \appendix
+\section{Results supporting information} % (fold)
+\label{sec:results}
+	
+	This appendix details the results obtained when running the application one two separate computers on the same network. The results include excerpts of the results obtained from Wireshark as well as the Round Trip Times (RTT) obtained for different implementations of the project.
+
+	\subsection{Wireshark results} % (fold)
+	\label{sub:wireshark_results}
+	
+		\begin{figure}
+			\centering
+			\includegraphics[width=\columnwidth]{resources/get_html}
+			\caption{Computer interaction for GET request}
+			\label{fig:basic_get}
+		\end{figure}
+		
+		\begin{figure}
+			\centering
+			\includegraphics[width=\columnwidth]{resources/message_get_html}
+			\caption{GET request message}
+			\label{fig:basic_get_message}
+		\end{figure}
+		
+		\begin{figure}
+			\centering
+			\includegraphics[width=\columnwidth]{resources/message_get_response_html}
+			\caption{GET response message}
+			\label{fig:basic_get_response}
+		\end{figure}
+		
+%		\begin{figure}
+%			\centering
+%			\includegraphics[width=\columnwidth]{resources/301.png}
+%			\caption{Computer interaction for 301 status code}
+%			\label{fig:301}
+%		\end{figure}
+
+
+	% subsubsection wireshark_results (end)
+
+
+% section results (end)
 
 \end{document}
