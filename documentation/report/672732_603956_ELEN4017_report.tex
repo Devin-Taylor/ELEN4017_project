@@ -268,6 +268,8 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{DIVISION OF WORK}
 
+	
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{RESULTS}
 
@@ -417,9 +419,10 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 		\subsubsection*{Conditional Get:} The conditional GET revolves primarily around the aforementioned \texttt{304} response code from the server. When the proxy receives the clients request message it checks if the file occurs in the proxy cache, see line 1 of Listing~\ref{lst:proxy_cond}. This is achieved by using the look-up table stored on the proxy of URL to last-modified times. If the file does occur in cache the client request message is modified by including the last-modified date in the look-up table. This is simple to do as the headers are stored as a map already. The proxy then obtains the response message from the server which either specifies that the file was modified or it was not. \\
 		
 		If the file is not modified then the proxy retrieves the file from cache and forwards a copy of it to the client. If the file has been modified then new file is written to cache as mentioned above and the cache map is modified to contain the new date, this implementation can be seen in lines 12-16 of Listing~\ref{lst:proxy_cond}. 
-		
 	
-% \lstinputlisting[language=go, style=go, breaklines=true]{../../src/client/client.go}
+	\subsection{All Other Common Functionality}
+	
+		The above mentioned sections were described in detail as they are fundamental to the functionality of the system. The other common functions implemented in the project are described in brief in Table~\ref{tab:functions}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -588,6 +591,25 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 		\lstinputlisting[language=go, caption=Server proxy GET interfaction, label={lst:proxy_cache}, style=go, breaklines=true, firstline=116, lastline=121]{../../src/proxy/proxy.go}
 		
 		\lstinputlisting[language=go, caption=Conditional GET, label={lst:proxy_cond}, style=go, breaklines=true, firstline=59, lastline=77]{../../src/proxy/proxy.go}
+		
+	\subsection{Other Functionality}
+	
+		\begin{table}[htbp]
+			\centering
+			\caption{Different methods for invoking server response errors}
+			\label{tab:functions}
+			\begin{tabular}{p{0.2\columnwidth}| p{0.2\columnwidth} | p{0.1\columnwidth} | p{0.5\columnwidth}}
+				\hline
+				\textbf{Function Name} & \textbf{File} & \textbf{Author} & \textbf{Description} \\ \hline
+				newRoundTripTimer & timer.go & DT & Create new timer object \\
+				loadTimerMap & timer.go & DT & Load pre-existing timer values \\
+				startTimer & timer.go & DT & Start the timer \\
+				stopTimer & timer.go & DT & Stop the timer and calculate duration \\
+				addToTimer & timer.go & DT & Add the new values to the timer map \\
+				writeTimerToFile & timer.go & DT & Write new timer values to the timer map file \\
+				\hline
+			\end{tabular}
+		\end{table}
 		
 
 % section results (end)
