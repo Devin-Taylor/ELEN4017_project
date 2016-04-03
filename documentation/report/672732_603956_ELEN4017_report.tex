@@ -6,6 +6,8 @@
 
 
 \usepackage{verbatim} % for writing code in the text
+\usepackage{tikz} % for drawing stuff
+\usetikzlibrary{positioning} % for relative coordinates
 
 \usepackage{listings} %for including code
 \usepackage{golang}  % include custom language for Go.
@@ -74,43 +76,105 @@ A typical HTTP communication can be described as follows:
 
 	HTTP is based on communication via request and response messages, both of which have specific formats and can take on a number of values. Both request and response messages contain three parts: the request/ response line, zero or more header lines and an optional body. The format of an HTTP request is shown in \figref{reqformat}. A number of common HTTP request methods are described in \tabref{httpreqs}. The format of an HTTP response is shown in \figref{respformat}. A number of common HTTP response codes are described in \tabref{httpresps}. 2xx responses indicate a success, 3xx responses indicate that client must submit a new request, 4xx responses indicate that the client is in error and 5xx responses indicate that the server is in error.
 
-	\begin{table}[htbp]
+	\begin{figure}[htbp]
 	\centering
-	\caption{Commonly used HTTP request methods}
-	\label{httpreqs}
-	\begin{tabular}{p{0.08\textwidth}|p{0.36\textwidth}}
-	\hline
-	\textbf{Method} & \textbf{Description} \\ \hline
-	GET & Request data from the specified URL \\
-	HEAD & Request a response identical to the GET response but without the body so that the client can get the header values without retrieving the entire data \\
-	POST & Request that the web server accept the data in body, this is often used for filling in forms\\
-	PUT & Request that the web server store the data in the body at the specified URL \\
-	DELETE & Request that the web server remove the resource stored at the specified URL  \\
-	TRACE & Request that the web server echo the request so that the client can detect any changes made to the original request \\
-	OPTIONS & Request that the web server inform the client which methods are valid at the specified URL \\
-	PATCH & Request that the web server apply a partial change to the resource at the given URL \\
-	\hline
-	\end{tabular}
-	\end{table}
+		\begin{tikzpicture}
+			\draw 
+				(0,0) rectangle (1.4,-0.5) node[pos=.5] {method}
+				(1.4,0) rectangle (2.0,-0.5) node[pos=.5] {SP}
+				(2.0,0) rectangle (2.9,-0.5) node[pos=.5] {URL}
+				(2.9,0) rectangle (3.5,-0.5) node[pos=.5] {SP}
+				(3.5,0) rectangle (5.2,-0.5) node[pos=.5] {version}
+				(5.2,0) rectangle (5.8,-0.5) node[pos=.5] {CR}
+				(5.8,0) rectangle (6.4,-0.5) node[pos=.5] {LF}
+				(0,-0.5) rectangle (2.9,-1) node[pos=.5] {header field name:}
+				(2.9,-0.5) rectangle (3.5,-1) node[pos=.5] {SP}
+				(3.5,-0.5) rectangle (5.2,-1) node[pos=.5] {value}
+				(5.2,-0.5) rectangle (5.8,-1) node[pos=.5] {CR}
+				(5.8,-0.5) rectangle (6.4,-1) node[pos=.5] {LF}
+				(0,-1) rectangle (2.9,-1.5) node[pos=.5] {header field name:}
+				(2.9,-1) rectangle (3.5,-1.5) node[pos=.5] {SP}
+				(3.5,-1) rectangle (5.2,-1.5) node[pos=.5] {value}
+				(5.2,-1) rectangle (5.8,-1.5) node[pos=.5] {CR}
+				(5.8,-1) rectangle (6.4,-1.5) node[pos=.5] {LF}
+				(0,-1.5) rectangle (6.4, -2) node[pos=.5] {etc...}
+				(0,-2) rectangle (0.6,-2.5) node[pos=.5] {CR}
+				(0.6,-2) rectangle (1.2,-2.5) node[pos=.5] {LF}
+				(0,-2.5) rectangle (6.4,-3.5) node[pos=.5] {entity body}
+				;
+		\end{tikzpicture}
+		\caption{HTTP request format}
+		\label{reqformat}
+	\end{figure}
 
 	\begin{table}[htbp]
+		\centering
+		\caption{Commonly used HTTP request methods}
+		\label{httpreqs}
+		\begin{tabular}{p{0.08\textwidth}|p{0.36\textwidth}}
+			\hline
+			\textbf{Method} & \textbf{Description} \\ \hline
+			GET & Request data from the specified URL \\
+			HEAD & Request a response identical to the GET response but without the body so that the client can get the header values without retrieving the entire data \\
+			POST & Request that the web server accept the data in body, this is often used for filling in forms\\
+			PUT & Request that the web server store the data in the body at the specified URL \\
+			DELETE & Request that the web server remove the resource stored at the specified URL  \\
+			TRACE & Request that the web server echo the request so that the client can detect any changes made to the original request \\
+			OPTIONS & Request that the web server inform the client which methods are valid at the specified URL \\
+			PATCH & Request that the web server apply a partial change to the resource at the given URL \\
+			\hline
+		\end{tabular}
+	\end{table}
+
+	\begin{figure}[htbp]
 	\centering
-	\caption{Commonly used HTTP response methods}
-	\label{httpresps}
-	\begin{tabular}{p{0.06\textwidth}|p{0.14\textwidth}|p{0.22\textwidth}}
-	\hline
-	\textbf{Code} & \textbf{Phrase} & \textbf{Meaning} \\ \hline
-	200 & OK & HTTP request successful \\
-	201 & Created & A new resource was created \\
-	202 & Accepted & Request has been accepted for processing \\
-	301 & Moved Permanently & The requested resource is now located elsewhere \\
-	302 & Found & The requested resource is temporarily located elsewhere \\
-	304 & Not Modified & The requested resource has not been modified since last requested - used for caching \\
-	400 & Bad Request & The request was not understood by the server \\
-	404 & Not Found & The requested resource could not be found \\
-	505 & HTTP Version Not Supported & The server does not support the HTTP version of the request \\
-	\hline
-	\end{tabular}
+		\begin{tikzpicture}
+			\draw 
+				(0,0) rectangle (1.2,-0.5) node[pos=.5] {version}
+				(1.2,0) rectangle (1.7,-0.5) node[pos=.5] {SP}
+				(1.7,0) rectangle (3.6,-0.5) node[pos=.5] {status code}
+				(3.6,0) rectangle (4.1,-0.5) node[pos=.5] {SP}
+				(4.1,0) rectangle (5.2,-0.5) node[pos=.5] {phrase}
+				(5.2,0) rectangle (5.8,-0.5) node[pos=.5] {CR}
+				(5.8,0) rectangle (6.4,-0.5) node[pos=.5] {LF}
+				(0,-0.5) rectangle (2.9,-1) node[pos=.5] {header field name:}
+				(2.9,-0.5) rectangle (3.5,-1) node[pos=.5] {SP}
+				(3.5,-0.5) rectangle (5.2,-1) node[pos=.5] {value}
+				(5.2,-0.5) rectangle (5.8,-1) node[pos=.5] {CR}
+				(5.8,-0.5) rectangle (6.4,-1) node[pos=.5] {LF}
+				(0,-1) rectangle (2.9,-1.5) node[pos=.5] {header field name:}
+				(2.9,-1) rectangle (3.5,-1.5) node[pos=.5] {SP}
+				(3.5,-1) rectangle (5.2,-1.5) node[pos=.5] {value}
+				(5.2,-1) rectangle (5.8,-1.5) node[pos=.5] {CR}
+				(5.8,-1) rectangle (6.4,-1.5) node[pos=.5] {LF}
+				(0,-1.5) rectangle (6.4, -2) node[pos=.5] {etc...}
+				(0,-2) rectangle (0.6,-2.5) node[pos=.5] {CR}
+				(0.6,-2) rectangle (1.2,-2.5) node[pos=.5] {LF}
+				(0,-2.5) rectangle (6.4,-3.5) node[pos=.5] {entity body}
+				;
+		\end{tikzpicture}
+		\caption{HTTP request format}
+		\label{respformat}
+	\end{figure}
+
+	\begin{table}[htbp]
+		\centering
+		\caption{Commonly used HTTP response methods}
+		\label{httpresps}
+		\begin{tabular}{p{0.06\textwidth}|p{0.14\textwidth}|p{0.22\textwidth}}
+			\hline
+			\textbf{Code} & \textbf{Phrase} & \textbf{Meaning} \\ \hline
+			200 & OK & HTTP request successful \\
+			201 & Created & A new resource was created \\
+			202 & Accepted & Request has been accepted for processing \\
+			301 & Moved Permanently & The requested resource is now located elsewhere \\
+			302 & Found & The requested resource is temporarily located elsewhere \\
+			304 & Not Modified & The requested resource has not been modified since last requested - used for caching \\
+			400 & Bad Request & The request was not understood by the server \\
+			404 & Not Found & The requested resource could not be found \\
+			505 & HTTP Version Not Supported & The server does not support the HTTP version of the request \\
+			\hline
+		\end{tabular}
 	\end{table}
 
 	\subsection{Persistent and Non-persistent}
@@ -176,7 +240,7 @@ A typical HTTP communication can be described as follows:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{DESCRIPTION OF CODE}
 
-% \lstinputlisting[language=go, style=go, breaklines=true]{../../src/client/client.go}
+\lstinputlisting[language=go, style=go, breaklines=true]{../../src/client/client.go}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
