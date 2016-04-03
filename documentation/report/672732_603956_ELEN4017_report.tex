@@ -373,7 +373,9 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 		
 		String manipulation was used to determine the presence of these sources. If there were any sources present the \texttt{retrieveSources()} function, see Listing~\ref{lst:client_ret} of Appendix~\ref{app:client}, would deconstruct the referenced strings through the use of regular expressions and the occurrence of special characters. From the deconstruction the function constructs a map of host name to file extension on the hosts server. The map would then be used to iterate over all elements in the map and retrieve them as described in the above sections.
 				
-			
+	\subsection{Server Code}
+	
+		As in the case of the client code the server code was primarily revolved around certain concepts. These concepts are: confirming and establishing the connection with the client, processing the clients request, generating the appropriate response to the clients request and sending the generated information to the client. 
 	
 % \lstinputlisting[language=go, style=go, breaklines=true]{../../src/client/client.go}
 
