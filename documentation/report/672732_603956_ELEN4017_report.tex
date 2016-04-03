@@ -59,9 +59,6 @@ Witwatersrand, Private Bag 3, 2050, Johannesburg, South Africa}
 Hyper Text Transfer Protocol (HTTP) is a fundamental component of the World Wide Web \cite{kurose}. Understanding HTTP is vital for gaining a well rounded and deep understanding of not only the web and Internet but networking in general. Through understanding HTTP an understanding of protocols as well as the Internet Protocol (IP) networking stack. A collection of web applications, including a client, a server and a proxy server, is to be implemented using a limited subset of HTTP. The goal of this project is to, as closely as possible, match the real world use case for HTTP. The design, implementation and testing of the web application suite is presented in this report along with a critical analysis and recommendations for future improvement of the system. The group work aspects of the project are also discussed. 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{BACKGROUND}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{HTTP DESCRIPTION}
 
 The Hyper Text Transfer Protocol has been in existence since 1990 \cite{rfc7230}. It is used by the World Wide Web as an application level protocol for transfer of information in a distributed system. It consists of two programs: a client and a server. The client, also commonly referred to as the browser, communicates with the server by sending it a HTTP request message. The server then responds with a HTTP response message. HTTP is a stateless protocol which means that the server has no knowledge of the client other than the information contained in the request. This is a limitation of HTTP which is overcome with the use of cookies \cite{kurose}. HTTP uses Transmission Control Protocol (TCP) as its underlying transport layer protocol \cite{kurose}. This means that HTTP does not need to worry about reliable data transfer issues such as out of sequence packets or packet loss.  
@@ -252,7 +249,7 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 
 	\subsection{Client}
 
-	The client must be capable of dealing with a number of scenarios when making requests to a server. If the server responds with a \texttt{503 Service Unavailable} then the client must resend the request as this is usually a temporary state. On the other hand if the server responds with a \texttt{301 Moved Permanently} or a \texttt{302 Found}, the client must resend the the request to the new location specified by the \texttt{location} header. If neither of those cases are true, then the client must get the header of the response message and using the \texttt{Content-Length} and \texttt{Transfer-Encoding} headers take an appropriate action to ensure that the whole response is received. Following this if the response is a \texttt{200 OK}, the client must search through the HTML for additional objects which must also be requested. This complex process is managed by recursively calling the \texttt{handleRequest} function which takes into account all of the above behaviors. \emph{Algorithm} \ref{handlereq} describes this behavior. Additionally the client must also be aware of whether or not the connection is set to \texttt{keep-alive} or \texttt{close} and keep the connection alive or close it respectively after the message has been received.
+	The client must be capable of dealing with a number of scenarios when making requests to a server. If the server responds with a \texttt{503 Service Unavailable} then the client must resend the request as this is usually a temporary state. On the other hand if the server responds with a \texttt{301 Moved Permanently} or a \texttt{302 Found}, the client must resend the the request to the new location specified by the \texttt{location} header. If neither of those cases are true, then the client must get the header of the response message and using the \texttt{Content-Length} and \texttt{Transfer-Encoding} headers take an appropriate action to ensure that the whole response is received. Following this if the response is a \texttt{200 OK}, the client must search through the HTML for additional objects which must also be requested. This complex process is managed by recursively calling the \texttt{handleRequest} function which takes into account all of the above behaviors. \emph{Algorithm} \ref{handlereq} describes this behavior. Additionally the client must also be aware of whether or not the connection is set to \texttt{keep-alive} or \texttt{close} and keep the connection alive or close it respectively after the message has been received. When the response to a get message is received, the contents are written to disk. Note that a \texttt{map} is used to store the sources host names and the files to retrieve from them. Go maps are implemented using Hash tables which means that they have a search time of $\mathcal{O}$(1) \cite{map}.
 
 	\begin{algorithm}
 	\caption{\texttt{handleRequest} Pseudo Code}
@@ -282,6 +279,17 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 			\EndFor
 		\end{algorithmic}
 	\end{algorithm}
+
+	The client allows the user some flexibility with regards to how to communicate. The user is able to set the following settings:
+
+	\begin{itemize}
+		\item protocol: TCP or UDP
+		\item connection: persistent or non-persistent
+		\item proxy: on or off
+		\item HTTP version: 1.0 or 1.1
+	\end{itemize}
+
+	The settings data is stored in a text file. When the UDP protocol is selected, the connection used will be non-persistent regardless of the user's choice. When selecting the proxy the user must either specify "off" or the host address and port of the proxy server.
 
 	The client is missing some important functionality. The most important of which is HTTP Secure (HTTPS), which uses Secure Socket Layer (SSL). A large amount of websites of the Internet now require SSL such as Google and Wikipedia. Without HTTPS the client is unable to access these websites. The main advantage of HTTPS is the improved security and authentication of the visited website which improves privacy and integrity in the exchange of data. This is an increasingly important aspect of Internet communication. This was not added due to time constraints.
 
@@ -321,7 +329,7 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 		\item The communication continues as is appropriate, closing connections when finished 
 	\end{enumerate}
 
-	In addition to the above, the proxy also acts as a web cache. The proxy maintains a list of files it has cached and the last modified date for the file. This is stored in a text file and loaded into a \texttt{map}, of file to last modified date, whenever it is searched. Whenever the proxy receives a request from the client, in step 4, it checks its \texttt{map} to see if it has the file cached. If it does not, then the procedure above continues, with and added step 7.5, in which the proxy caches the file and saves its last modified time. However, if it does, it sends the server a conditional get message containing the \texttt{If-Modified-Since} header with the value loaded from the \texttt{map}. The server will now send back either one of, a \texttt{304 Not Modified} response with a blank body to indicate that the cached file is up to date, or a response containing the most up to date file and its last modified date. This date will be formatted as described by RFC1123. If the server sends back the newly modified file, the proxy caches it before forwarding it to the client in step 8. Otherwise the proxy simply composes a new response containing the cached file and sends that to the client as though it was from the server instead of completing step 8.
+	In addition to the above, if the request is a GET, the proxy also acts as a web cache. The proxy maintains a list of files it has cached and the last modified date for the file. This is stored in a text file and loaded into a \texttt{map}, of file to last modified date, whenever it is searched. Whenever the proxy receives a request from the client, in step 4, it checks its \texttt{map} to see if it has the file cached. If it does not, then the procedure above continues, with and added step 7.5, in which the proxy caches the file and saves its last modified time. However, if it does, it sends the server a conditional get message containing the \texttt{If-Modified-Since} header with the value loaded from the \texttt{map}. The server will now send back either one of, a \texttt{304 Not Modified} response with a blank body to indicate that the cached file is up to date, or a response containing the most up to date file and its last modified date. This date will be formatted as described by RFC1123. If the server sends back the newly modified file, the proxy caches it before forwarding it to the client in step 8. Otherwise the proxy simply composes a new response containing the cached file and sends that to the client as though it was from the server instead of completing step 8.
 
 	The proxy employs the same checks as the client for making sure that it receives all the data using the \texttt{Content-Length} and \texttt{Transfer-Encoding} headers.  
 
@@ -507,15 +515,17 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 
 \bibitem{kurose} Kurose J F, Ross K W. \emph{Computer networking: a top-down approach.} Boston, Pearson. 2013. pp 83 - 115.
 
-\bibitem{rfc7230} Fielding R, Reschke J. `Hypertext Transfer Protocol (HTTP/1.1): Message Syntax and Routing.' IETF, RFC June 2014. [online] Available: \url{https://tools.ietf.org/html/rfc7230}
+\bibitem{rfc7230} Fielding R, Reschke J. `Hypertext Transfer Protocol (HTTP/1.1): Message Syntax and Routing.' IETF, RFC June 2014. [online] Available: \url{https://tools.ietf.org/html/rfc7230} Last Accessed: 3 April 2016
 
-\bibitem{rfc1945} Berners-Lee T, Fielding R, Frystyk H. `Hypertext Transfer Protocol -- HTTP/1.0' IETF, RFC May 1996. [online] Available: \url{https://tools.ietf.org/html/rfc1945}
+\bibitem{rfc1945} Berners-Lee T, Fielding R, Frystyk H. `Hypertext Transfer Protocol -- HTTP/1.0' IETF, RFC May 1996. [online] Available: \url{https://tools.ietf.org/html/rfc1945} Last Accessed: 3 April 2016
 
 \bibitem{guinard}   Guinard D, Trifa V (2009). \emph{Towards the Web of Things: Web Mashups for Embedded Devices.} Workshop on Mashups, Enterprise Mashups and Lightweight Composition on the Web (MEM 2009), in proceedings of WWW (International World Wide Web Conferences). Madrid, Spain. April 2009.  
 
+\bibitem{map} Gerrand A. \emph{The Go Blog - Go maps in action.} The Go Programming Language. 6 February 2013 . [online] Available: \url{https://blog.golang.org/go-maps-in-action} Last Accessed: 3 April 2016
+
 \bibitem{doxsey} Doxsey C. \emph{An Introduction to Programming in Go.} 2012. ch 10. pp 108 - 111.
 
-\bibitem{net} The Go Programming Language. \emph{Package net.} The Go Programming Language. Available: \url{https://golang.org/pkg/net/#Dial}.
+\bibitem{net} The Go Programming Language. \emph{Package net.} The Go Programming Language. Available: \url{https://golang.org/pkg/net/#Dial} Last Accessed: 3 April 2016
 
 
 \end{thebibliography}
