@@ -305,6 +305,26 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 
 	\subsection{Proxy}
 
+	The proxy, much like the server, is multi-threaded using \texttt{goroutines}. This allows the proxy to serve multiple clients at a time. The proxy works with both persistent and non-persistent TCP, however it is not implemented with UDP. 
+
+	In its most basic sense the proxy's behavior can be described as follows:
+
+	\begin{enumerate}
+		\item The proxy listens for TCP connections
+		\item The proxy receives a connection from the client
+		\item The proxy creates a new thread to handle this new connection
+		\item The proxy receives a request from the client
+		\item The proxy creates a connection to the destination server
+		\item The proxy forwards the request to the destination server
+		\item The proxy receives a response from the destination server
+		\item The proxy forwards the response to the client
+		\item The communication continues as is appropriate, closing connections when finished 
+	\end{enumerate}
+
+	In addition to the above, the proxy also acts as a web cache. The proxy maintains a list of files it has cached and the last modified date for the file. This is stored in a text file and loaded into a \texttt{map}, of file to last modified date, whenever it is searched. Whenever the proxy receives a request from the client, in step 4, it checks its \texttt{map} to see if it has the file cached. If it does not, then the procedure above continues, with and added step 7.5, in which the proxy caches the file and saves its last modified time. However, if it does, it sends the server a conditional get message containing the \texttt{If-Modified-Since} header with the value loaded from the \texttt{map}. The server will now send back either one of, a \texttt{304 Not Modified} response with a blank body to indicate that the cached file is up to date, or a response containing the most up to date file and its last modified date. This date will be formatted as described by RFC1123. If the server sends back the newly modified file, the proxy caches it before forwarding it to the client in step 8. Otherwise the proxy simply composes a new response containing the cached file and sends that to the client as though it was from the server instead of completing step 8.
+
+	The proxy employs the same checks as the client for making sure that it receives all the data using the \texttt{Content-Length} and \texttt{Transfer-Encoding} headers.  
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{DIVISION OF WORK}
 
