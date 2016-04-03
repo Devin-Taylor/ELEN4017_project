@@ -620,6 +620,17 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 				stopTimer & timer.go & DT & Stop the timer and calculate duration \\
 				addToTimer & timer.go & DT & Add the new values to the timer map \\
 				writeTimerToFile & timer.go & DT & Write new timer values to the timer map file \\
+				CheckError & check\_error.go & JA & Interpret system error \\
+				ReadConfig & config\_settings.go & DT & Read configuration settings from file \\
+				InitializeConfig & config\_settings.go & DT & Initialize the configuration settings to last known settings \\
+				WriteConfig & config\_settings.go & DT & Write configuration settings to configuration file \\
+				CheckInput & config\_settings.go & DT & Interpret the user input for changing a specified configuration \\
+				DecomposeRequest & decompose\_request.go & JA & Extract the HTTP method, desired URL, HTTP version, header lines, and body from the client request message \\
+				DecomposeResponse & decompose\_response.go & DT & Extract the HTTP version, status code, status message, header lines, and body from the server response message \\
+				FileExists & file\_exists.go & JA & Determine if the file at the desired path exists \\
+				
+								
+				
 				\hline
 			\end{tabular}
 		\end{table}
