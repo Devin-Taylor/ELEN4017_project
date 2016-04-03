@@ -205,6 +205,8 @@ A typical HTTP communication can be described as follows:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{SYSTEM OVERVIEW} \label{sysover}
 
+The system is implemented using HTTP/1.1. This was chosen as it is the most common version of HTTP \cite{}. Some HTTP/1.0 features are still implemented for backwards compatibility and not all HTTP/1.1 features have been implemented.
+
 	\subsection{System Architecture}
 
 	As mentioned, the HTTP protocol follows the Client-Server model. This means that to properly demonstrate the implementation of HTTP, both a client and server are required. Additionally, in order to more extensively represent a real world application of HTTP, a proxy is required. All three of these systems have been implemented in the Go programming language developed by Google. It is a statically typed, imperative, garbage collected, compiled language. It was designed as a system programming language with specific support for networking and multi-threading.
@@ -254,7 +256,11 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 
 	The server is capable of using the following responses: \texttt{505 HTTP Version Not Supported}, \texttt{404 Not Found}, \texttt{400 Bad Request}, \texttt{304 Not Modified}, \texttt{301 Moved Permanently}, and \texttt{200 OK}. These methods cover the majority of common situations. However, some key methods are missing. The \texttt{302 Found} method is useful in real world systems where resources are temporarily moved. Additionally a wider range of 2xx responses are also useful as they give the client more information about the action that has been taken by the server in addition to the fact that their request was successful. Once again, these were not added due to time constraints.
 
-	Headers
+	The server implements a very limited subset of headers. These are: \texttt{Content-Length}, \texttt{Last-Modified}, \texttt{Location}, \texttt{Content-Language}, \texttt{Date} and \texttt{Server}. The \texttt{Content-Length} header is for HTTP/1.0 backwards compatibility. The \texttt{Last-Modified} header, along side the \texttt{304 Not Modified} response, is for use with proxy servers. The \texttt{Location} header is used in conjunction with the \texttt{301 Moved Permanently} response for redirections. The server can also accept a range of headers. Of particular interest here is the \texttt{If-Modified-Since} header which is sent by a proxy to check if it has the most up to date version of a file. An important header that needs to be added is \texttt{Content-Type}, which gives the client important information about the body of the message. 
+
+	Another feature that the server does not support is the use of chunked encoding which allows for data to be streamed. This is particularly useful for dynamically generated content where the length of the content is not known before hand and the \texttt{Content-Length} header cannot be used. Instead the \texttt{Transfer-Encoding} header is used with the value \texttt{chunked}. This lets the client know that they should continue receiving data until the end of file marker is received. This was not implemented because the server does not have any dynamically generated pages and can always use \texttt{Content-Length} as would have been done in HTTP/1.0.
+
+	As mentioned the server uses multi-threading to support multiple TCP connections at a time alongside a UDP connection. This is done by creating two threads when the server starts - one for the UDP listener and one for the TCP listener. Each of these then listens for a connection and when one is made it handles the client appropriately. The UDP server communicates with the client in a connectionless manner and as a result can conduct all of the communication on the port used for listening. The TCP server on the other hand uses connections for communication and as a result must create a new port to communicate with the client on. In order to prevent this from locking up with system for long or persistent communication sessions, every time a new client makes a connection, a new thread is created with the purpose of handling the communication on a new port. \texttt{goroutines} are very lightweight which means that they scale well with size and will allow the server to support thousands of simultaneous connections. Note that \texttt{goroutines} are executed concurrently which is not necessarily in parallel. What this means is that although the system will not lock out connections while one is being handled, the system will slow down with too many connections \cite{doxsey}.
 
 	\subsection{Proxy}
 
@@ -404,6 +410,8 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 \bibitem{rfc1945} Berners-Lee T, Fielding R, Frystyk H. `Hypertext Transfer Protocol -- HTTP/1.0' IETF, RFC May 1996. [online] Available: \url{https://tools.ietf.org/html/rfc1945}
 
 \bibitem{guinard}   Guinard D, Trifa V (2009). \emph{Towards the Web of Things: Web Mashups for Embedded Devices.} Workshop on Mashups, Enterprise Mashups and Lightweight Composition on the Web (MEM 2009), in proceedings of WWW (International World Wide Web Conferences). Madrid, Spain. April 2009.  
+
+\bibitem{doxsey} Doxsey C. \emph{An Introduction to Programming in Go.} 2012. ch 10. pp 108 - 111.
 
 \bibitem{net} The Go Programming Language. \emph{Package net.} The Go Programming Language. Available: \url{https://golang.org/pkg/net/#Dial}.
 
