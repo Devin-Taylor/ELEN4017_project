@@ -245,7 +245,7 @@ A number of features were implemented. The ability to use both TCP and UDP was i
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{DETAILED IMPLEMENTATION}
 
-HTTP is a large, complex protocol that has evolved over many years. As a result only a subset of the features was implemented in this system. The implemented features will be discussed in detail and important unimplemented features will be mentioned. Additionally the Go language and the implications of implementing the system in this language will be discussed.
+HTTP is a large, complex protocol that has evolved over many years. As a result only a subset of the features was implemented in this system. The implemented features will be discussed in detail and important unimplemented features will be mentioned. Additionally the Go language and the implications of implementing the system in this language will be discussed. For example Go is a garbage collected language which greatly simplified the code due to the lack of manual memory management. Additionally, because Go is compiled and not interpreted it has a very fast run time.
 
 	\subsection{Client}
 
@@ -508,6 +508,8 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{CONCLUSION}
+
+The design, implementation and testing of a HTTP application suite including a client, server and proxy server has been presented. In addition the code has been described and the team work aspects of the project discussed and reflected on. The use of the Go language allowed for a simple and elegant solution with its \texttt{goroutines}, which allowed for seamless concurrency, powerful high level features such as \texttt{map}s and garbage collection, which promoted clean and concise code, and fast run time. A subset of HTTP large enough to perform basic requests and responses in HTTP/1.1 was implemented. However, there is a large room for improvements in this aspect as well as the limited features of the proxy server. The web client was able to access pages hosted on both the Internet and the server. Testing with Wireshark revealed that all of the systems worked as expected. In addition the various configurations of connection types, protocols and proxy usage behaved as expect.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
