@@ -33,4 +33,4 @@ _testmain.go
 *.aux
 *.out
 *.pdf
-!/documentation/report/resources/
+!*/readme.pdf
