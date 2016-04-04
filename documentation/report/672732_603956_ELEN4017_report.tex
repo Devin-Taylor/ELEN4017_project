@@ -10,6 +10,7 @@
 \usetikzlibrary{positioning} % for relative coordinates
 \usepackage{algpseudocode}
 \usepackage{algorithm}
+\usepackage{pdfpages}
 
 \usepackage{listings} %for including code
 \usepackage{golang}  % include custom language for Go.
@@ -501,6 +502,10 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 	\subsection{All Other Common Functionality}
 	
 		The above mentioned sections were described in detail as they are fundamental to the functionality of the system. The other common functions implemented in the project are described in brief in Table~\ref{tab:functions} of Appendix~\ref{app:other_func}.
+		
+	\subsection{How To Run Project}
+	
+		The details as to how to run the project can be seen in the README file in Appendix~\ref{app:use}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -689,8 +694,6 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 		
 		\lstinputlisting[language=go, caption=Conditional GET, label={lst:proxy_cond}, style=go, breaklines=true, firstline=59, lastline=77]{../../src/proxy/proxy.go}
 		
-		\lstinputlisting[caption=Conditional GET, breaklines=true]{../../README.md}
-		
 	\subsection{Other Functionality}
 	\label{app:other_func}
 		\begin{table}[htbp]
@@ -751,7 +754,16 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 				\hline
 			\end{tabular}
 		\end{table}
-
+	
+		
+		\includepdf[pages=1,scale=0.75, frame, pagecommand={\subsection{How To Use The Code}\label{app:use}}, linktodoc=true]{resources/readme.pdf}
+		
+%		\begin{figure}[h!]
+%			\centering
+%			\includepdf[width=\columnwidth, frame]{resources/readme.pdf}
+%			\caption{Project README}
+%			\label{fig:readme}
+%		\end{figure}
 \clearpage
 \section{Time Management}
 \label{app:time_man}
