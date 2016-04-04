@@ -10,6 +10,7 @@
 \usetikzlibrary{positioning} % for relative coordinates
 \usepackage{algpseudocode}
 \usepackage{algorithm}
+\usepackage{pdfpages}
 
 \usepackage{listings} %for including code
 \usepackage{golang}  % include custom language for Go.
@@ -350,9 +351,9 @@ HTTP is a large, complex protocol that has evolved over many years. As a result,
 		
 		The code aspect of the project was managed using git and GitHub. The integration capabilities offered by git meant that the team did not necessarily need to work together all the time, which increased the rate at which work was developed and ultimately lead to the deadline being met. 
 
-	\subsection{Division of Code}
-	
-		The division of work was such that each member of the group contributed equally to the outcome of the entire project. This was achieved by designating specific subsystems to each member of the group. Devin Taylor was responsible for handling the client code and all associated common functionality, while James Allignham was responsible for handling all the sever code and associated common functionality. From these two bases both engineers contributed equally to the proxy as the majority of the proxy was composed of the subsystems from the client and server. \emph{Table}~\ref{tab:functions} in Appendix~\ref{app:other_func}. A screen shot of the GitHub contributions to the project can be seen in \emph{Figure}~\ref{fig:github} of Appendix~\ref{app:other_func}, this figure emphasises the equal contributions of each engineer. 
+	\subsection{Division of Code}	
+
+		The division of work was such that each member of the group contributed equally to the outcome of the entire project. This was achieved by designating specific subsystems to each member of the group. Devin Taylor was responsible for handling the client code and all associated common functionality, while James Allignham was responsible for handling all the sever code and associated common functionality. From these two bases both engineers contributed equally to the proxy as the majority of the proxy was composed of the subsystems from the client and server. \emph{Table}~\ref{tab:functions} in Appendix~\ref{app:other_func} details the specific aspects of the code that each engineer wrote/contributed to. A screen shot of the GitHub contributions to the project can be seen in \emph{Figure}~\ref{fig:github} of Appendix~\ref{app:other_func}, this figure emphasises the equal contributions of each engineer. 
 	
 	\subsection{Division of Report Writing}
 	
@@ -441,11 +442,7 @@ HTTP is a large, complex protocol that has evolved over many years. As a result,
 		
 		Thirdly, another minor weakness, which was primarily due to time constraints, was the inability to interact with web forms. This is due to the fact that JavaScript is often implemented in order to auto-generate the correctly structured POST message for the form. As a result of this a well rounded implementation of this could not be presented and a design decision was taken to omit this aspect. Despite this, the POST method still works when generating a basic example between the client and server.  \\
 		
-		There are multiple aspect of the system that are subject to improvements. Initially, creating a smart way of mapping client and sever IP addresses on the proxy will allow for the above mentioned thread problem to be fixed. This would be the primary priority of the project. Also, allowing the proxy to implement UDP communication would better the functionality range of the system. The other aspect of improvement would be increasing the overall scope of the project. Expansions to the system could be in the form of adding support for https and not only http and increasing the range of requests and responses to all those mentioned in \emph{Tables}~\ref{httpreqs} and \ref{httpresps}.
-	
-	\subsection{Opportunities}
-	
-		
+		There are multiple aspect of the system that are subject to improvements. Initially, creating a smart way of mapping client and sever IP addresses on the proxy will allow for the above mentioned thread problem to be fixed. This would be the primary priority of the project. Also, allowing the proxy to implement UDP communication would better the functionality range of the system. The other aspect of improvement would be increasing the overall scope of the project. Expansions to the system could be in the form of adding support for https and not only http and increasing the range of requests and responses to all those mentioned in \emph{Tables}~\ref{httpreqs} and \ref{httpresps}.	
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -508,7 +505,12 @@ HTTP is a large, complex protocol that has evolved over many years. As a result,
 	
 	\subsection{All Other Common Functionality}
 	
+
 		The above mentioned sections were described in detail as they are fundamental to the functionality of the system. The other common functions implemented in the project are described in brief in \emph{Table}~\ref{tab:functions} of Appendix~\ref{app:other_func}.
+		
+	\subsection{How To Run Project}
+	
+		The details as to how to run the project can be seen in the README file in Appendix~\ref{app:use}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -695,9 +697,8 @@ HTTP is a large, complex protocol that has evolved over many years. As a result,
 	
 		\lstinputlisting[language=go, caption=Server proxy GET interfaction, label={lst:proxy_cache}, style=go, breaklines=true, firstline=116, lastline=121]{../../src/proxy/proxy.go}
 		
-		\lstinputlisting[language=go, caption=Conditional GET, label={lst:proxy_cond}, style=go, breaklines=true, firstline=59, lastline=77]{../../src/proxy/proxy.go}
-		
-		\lstinputlisting[caption=README - installation instructions, breaklines=true]{../../README.md}
+		\lstinputlisting[language=go, caption=Conditional GET, label={lst:proxy_cond}, style=go, breaklines=true, firstline=59, lastline=77]{../../src/proxy/proxy.go}	
+
 		
 	\subsection{Other Functionality}
 	\label{app:other_func}
@@ -759,7 +760,16 @@ HTTP is a large, complex protocol that has evolved over many years. As a result,
 				\hline
 			\end{tabular}
 		\end{table}
-
+	
+		
+		\includepdf[pages=1,scale=0.75, frame, pagecommand={\subsection{How To Use The Code}\label{app:use}}, linktodoc=true]{resources/readme.pdf}
+		
+%		\begin{figure}[h!]
+%			\centering
+%			\includepdf[width=\columnwidth, frame]{resources/readme.pdf}
+%			\caption{Project README}
+%			\label{fig:readme}
+%		\end{figure}
 \clearpage
 \section{Time Management}
 \label{app:time_man}
