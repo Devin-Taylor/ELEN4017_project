@@ -35,7 +35,7 @@ When dialing into the server the client must specify the host IP or DNS address:
 > `go run *.go localhost:1235` or `go run *.go www.amazon.com:80` (port :1235 was specified as the localhost port for the server and :1236 was specified as the localhost port for the proxy)
 
 Once the user runs the client connection to the server the user will be prompted to enter the method, this can be of the form of one of the following: GET, HEAD, PUT, POST, DELETE. The user will then be prompted to enter the URL, this is the location of the desired file of the server. 
-> localhost: `/index.html` or for amazon home page `/`
+> localhost: `/index.html` or for amazon home page: `/`
 
 __NOTE:__ The URL **MUST** begin with a single forwardslash
 
