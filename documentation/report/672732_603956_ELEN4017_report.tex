@@ -419,24 +419,9 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 	
 		A timer class was created in order to determine the Round Trip Times (RTT) observed for different settings on the system. The different systems settings are detailed in Section~\textcolor{red}{NEED A SECTION REFERENCE FOR THIS}. \\
 		
-		The results obtained from these calculations were written to a text file and plotted using a graphing library, the results can be seen in Figure~\ref{fig:rtt}. The tests were conducted on retrieving the same \texttt{/index.html} for each situation. The results obtained are as expected, whereby the fastest time was TCP with a persistent connection and no proxy while the slowest time was a TCP non-persistent connection going through the proxy. 
+		The results obtained from these calculations were written to a text file and plotted using a graphing library, the results can be seen in Figure~\ref{fig:rtt} of Appendix~\ref{app:rtt}. The tests were conducted on retrieving the same \texttt{/index.html} for each situation. The results obtained are as expected, whereby the fastest time was TCP with a persistent connection and no proxy while the slowest time was a TCP non-persistent connection going through the proxy. \\
 		
-		\begin{figure}[htbp]
-			\centering
-			\includegraphics[width=\columnwidth]{resources/RTT.png}
-			\caption{RTT times for different connection type settings}
-			\label{fig:rtt}
-		\end{figure}
-		
-		The same experiment was conducted to determine the effectiveness of the cache on the rate at which the information is retrieved by the client. The results can be seen in Figure~\ref{fig:rtt_cache}, it can be noted that the once the \texttt{/index.html} file had been cached the client was able to retrieve the information faster.
-		
-		\begin{figure}[htbp]
-			\centering
-			\includegraphics[width=\columnwidth]{resources/RTT_cache.png}
-			\caption{RTT times for different cache statuses on a TCP persistent connection}
-			\label{fig:rtt_cache}
-		\end{figure}
-
+		The same experiment was conducted to determine the effectiveness of the cache on the rate at which the information is retrieved by the client. The results can be seen in Figure~\ref{fig:rtt_cache} of Appendix~\ref{app:rtt}, it can be noted that the once the \texttt{/index.html} file had been cached the client was able to retrieve the information faster.
 
 	% subsubsection basic_client_server_http_requests_and_responses (end)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -654,6 +639,21 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 			\caption{301 Server response message with location header field}
 			\label{fig:301}
 		\end{figure}
+		
+		\begin{figure}[h!]
+			\centering
+			\includegraphics[width=0.5\columnwidth]{resources/RTT.png}
+			\caption{RTT times for different connection type settings}
+			\label{fig:rtt}
+		\end{figure}
+		
+		\begin{figure}[h!]
+			\centering
+			\includegraphics[width=0.5\columnwidth]{resources/RTT_cache.png}
+			\caption{RTT times for different cache statuses on a TCP persistent connection}
+			\label{fig:rtt_cache}
+		\end{figure}
+		
 \clearpage
 \section{Code Description Supporting Information}
 	
@@ -688,6 +688,8 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 		\lstinputlisting[language=go, caption=Server proxy GET interfaction, label={lst:proxy_cache}, style=go, breaklines=true, firstline=116, lastline=121]{../../src/proxy/proxy.go}
 		
 		\lstinputlisting[language=go, caption=Conditional GET, label={lst:proxy_cond}, style=go, breaklines=true, firstline=59, lastline=77]{../../src/proxy/proxy.go}
+		
+		\lstinputlisting[caption=Conditional GET, breaklines=true]{../../README.md}
 		
 	\subsection{Other Functionality}
 	\label{app:other_func}
