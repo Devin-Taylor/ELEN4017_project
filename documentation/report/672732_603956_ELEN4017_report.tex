@@ -220,15 +220,15 @@ The system is implemented using HTTP/1.1. Some HTTP/1.0 features are still imple
 
 	As mentioned, the HTTP protocol follows the Client-Server model. This means that to properly demonstrate the implementation of HTTP, both a client and server are required. Additionally, in order to more extensively represent a real world application of HTTP, a proxy is required. All three of these systems have been implemented in the Go programming language developed by Google. It is a statically typed, imperative, garbage collected, compiled language. It was designed as a systems programming language with specific support for networking and multi-threading.
 
-	\subsubsection{Client:}
+	\subsubsection*{Client:}
 
 	The client is responsible for sending HTTP requests to the server. These requests are generated based on user input. This process involves creating the HTTP request in the correct format, as discussed in \secref{formats}, creating a TCP or UDP connection and then sending the request in byte format. The client then waits for a response from the server, decomposing the response into its elements various elements, mentioned in \secref{formats}, and takes an appropriate action based on the response type and contents.
 
-	\subsubsection{Server:}
+	\subsubsection*{Server:}
 
 	The server is responsible for listening for both TCP and UDP connections. Once a connection of either kind is made, the server must handle the client which involves, in the case of TCP, creating a new socket for the communication, and in the case of either TCP or UDP, receiving the HTTP request. The HTTP request must then be decomposed into its elements, discussed in \secref{formats}. Based on the type of request and its contents, the server must take an appropriate action as well as compose and send an HTTP response. Then, in the case of non-persistent TCP connections only, the sever must close the connection.
 
-	\subsubsection{Proxy Server:}
+	\subsubsection*{Proxy Server:}
 
 	The proxy is responsible for taking all incoming requests from the client and forwarding them to the destination server. The proxy server must also cache web objects sent, via itself, from the server to the client. This makes use of the \texttt{If-Modified-Since} and \texttt{Last-Modified} header fields to allow the proxy to have the most up-to-date version of any object in its cache. The proxy acts as both a client and a server in the sense that it is viewed as a server from the perspective of the client and vice versa. As a result, it has many of the responsibilities listed above.
 
@@ -236,19 +236,19 @@ The system is implemented using HTTP/1.1. Some HTTP/1.0 features are still imple
 
 A number of features were implemented. The ability to use both TCP and UDP was implemented for the client and server. The ability to use both persistent and non-persistent TCP was implemented on the client, server and proxy. Multi-threading was implemented on the server and proxy allowing them to server multiple clients. The ability to track the round-trip-time (RTT) of a message was implemented on the client.
 
-	\subsubsection{TCP vs UDP:}
+	\subsubsection*{TCP vs UDP:}
 
 	This feature allows the user of the client to select the underlying transport layer protocol to use. TCP has the advantage that it offers some robustness in the form of protection against packet loss and delay. On the other hand, UDP offers a higher speed than TCP due to its lack of data reliability services. The server implements this feature in terms of the ability to listen for both TCP and UDP connections and handle each appropriately. 
 
-	\subsubsection{Persistent vs Non-persistent:}
+	\subsubsection*{Persistent vs Non-persistent:}
 
-	The choice of persistent TCP over non-persistent TCP allows the communication between the client and the server to be sped up for sessions with more than one request. This speed up is a result of not having to perform the three-way handshake every time a request message is sent from the client to the server. This is implemented using the header fields discussed in \secref{pvnp} as well as Multi-threading discussed below in \secref{thread}.
+	The choice of persistent TCP over non-persistent TCP allows the communication between the client and the server to be sped up for sessions with more than one request. This speed up is a result of not having to perform the three-way handshake every time a request message is sent from the client to the server. This is implemented using the header fields discussed in \secref{pvnp} as well as Multi-threading discussed in the section below.
 
-	\subsubsection{Multi-threading:} \label{thread}
+	\subsubsection*{Multi-threading:} \label{thread}
 
-	Multi-threading, implemented via \texttt{goroutines}, allows the server (as well as the proxy) to be parallelized. Effectively, this feature allows the server to handle multiple TCP connections at the same time (while also serving clients via UDP connections). This makes the use of persistent TCP feasible as it allows the server to keep listening for new TCP connections even while handling a long persistent communication with the client.
+	Multi-threading, implemented via \\ \texttt{goroutines}, allows the server (as well as the proxy) to be parallelized. Effectively, this feature allows the server to handle multiple TCP connections at the same time (while also serving clients via UDP connections). This makes the use of persistent TCP feasible as it allows the server to keep listening for new TCP connections even while handling a long persistent communication with the client.
 
-	\subsubsection{RTT timer:}
+	\subsubsection*{RTT timer:}
 
 	This feature allows the client to time how long it takes to receive the response to a message. This could be useful for time out periods or for comparing different types and combinations of communication schemes i.e. TCP vs UDP, persistent vs non-persistent, and proxy vs no proxy.
 
@@ -487,7 +487,7 @@ HTTP is a large, complex protocol that has evolved over many years. As a result,
 		
 		\subsubsection*{Taking Action and Generating Response Message:} The HTTP method will determine the course of action that the server follows, these are detailed in \emph{Table}~\ref{httpreqs}. The method of interest is the GET method. The GET method firstly requires the server to check if the file exists and secondly, if it does exist, to retrieve a copy of the file and parse it into the response message to be sent to the client. If the file does not exist or there was another problem with the client request message, the server would generate the appropriate error message detailed in \emph{Table}~\ref{httpresps}.
 		
-		\subsubsection*{Server Proxy Interfacing:} The proxy interaction will make specific reference to the GET request as this encompasses all functionality. The implementation of the GET response code can be seen in Listing~\ref{lst:server_prox} of Appendix~\ref{app:server}. \\
+		\subsubsection*{Server Proxy Interfacing:} The proxy interaction will make specific reference to the GET request as this encompasses all functionality. The implementation of the GET response code can be seen in Listing~\ref{lst:server_prox} of Appendix~\ref{app:server}. \\ hello~\ref{hi}
 		
 		If the proxy contains a copy of the requested file it appends a \texttt{Last-Modified} header line to the request message, this is what the server looks for. If there is a date mentioned the server then compares if the file has been modified since that date (the last modified date can be obtained from the function call in line 7 of the listing), this is achieved through the use of the \texttt{time.After()} function in the \texttt{time} Go package (see line 11 of the listing). If the file has been modified then the server returns the latest copy of the file and if it hasn't it returns the \texttt{304 Not Modified} response. \\
 		
@@ -528,9 +528,9 @@ HTTP is a large, complex protocol that has evolved over many years. As a result,
 
 \bibitem{rfc1945} Berners-Lee T, Fielding R, Frystyk H. `Hypertext Transfer Protocol -- HTTP/1.0' IETF, RFC May 1996. [online] Available: \url{https://tools.ietf.org/html/rfc1945} Last Accessed: 3 April 2016
 
-\bibitem{guinard}   Guinard D, Trifa V (2009). \emph{Towards the Web of Things: Web Mashups for Embedded Devices.} Workshop on Mashups, Enterprise Mashups and Lightweight Composition on the Web (MEM 2009), in proceedings of WWW (International World Wide Web Conferences). Madrid, Spain. April 2009.  
-
 \bibitem{map} Gerrand A. \emph{The Go Blog - Go maps in action.} The Go Programming Language. 6 February 2013 . [online] Available: \url{https://blog.golang.org/go-maps-in-action} Last Accessed: 3 April 2016
+
+\bibitem{guinard}   Guinard D, Trifa V (2009). \emph{Towards the Web of Things: Web Mashups for Embedded Devices.} Workshop on Mashups, Enterprise Mashups and Lightweight Composition on the Web (MEM 2009), in proceedings of WWW (International World Wide Web Conferences). Madrid, Spain. April 2009.  
 
 \bibitem{doxsey} Doxsey C. \emph{An Introduction to Programming in Go.} 2012. ch 10. pp 108 - 111.
 
@@ -629,7 +629,7 @@ HTTP is a large, complex protocol that has evolved over many years. As a result,
 			\caption{Difference in proxy request messages depending on status of cache}
 			\label{fig:proxy_comparrison}
 		\end{figure}
-		
+	\clearpage
 	\subsection{RTT Results}
 	\label{app:rtt}
 		
