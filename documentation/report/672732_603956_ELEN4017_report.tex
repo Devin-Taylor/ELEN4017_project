@@ -45,7 +45,7 @@ Witwatersrand, Private Bag 3, 2050, Johannesburg, South Africa}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\abstract{Hyper Text Transfer Protocol is a fundamental component of the World Wide Web and understanding it is important not only to understanding the Internet but networking as a whole. The design, implementation and testing of a HTTP application suite including a client, server and proxy server has been presented. In addition the code has been described and the team work aspects of the project discussed and reflected on. The use of the Go language allowed for a simple and elegant solution with its \texttt{goroutines}, powerful high level features such as \texttt{map}s and garbage collection, and fast run time. A subset of HTTP large enough to perform basic requests and responses in HTTP/1.1 was implemented. However, there is a large room for improvements in this aspect as well as in the the limited features of the proxy server. The web client was able to access pages hosted on both the Internet and the server. Testing with Wireshark revealed that all of the systems worked as expected. In addition the various configurations of connection types, protocols and proxy usage behaved as expect.}
+\abstract{Hyper Text Transfer Protocol is a fundamental component of the World Wide Web and understanding it is important not only to understanding the Internet but networking as a whole. The design, implementation and testing of an HTTP application suite including a client, server and proxy server has been presented. In addition, the code has been described and the teamwork aspects of the project discussed and reflected on. The use of the Go language allowed for a simple and elegant solution with its \texttt{goroutines}, powerful high level features such as \texttt{map}s and garbage collection, and fast run time. A subset of HTTP large enough to perform basic requests and responses in HTTP/1.1 was implemented. However, there is a large room for improvements in this aspect as well as in the the limited features of the proxy server. The web client was able to access pages hosted on both the Internet and the server. Testing with Wireshark revealed that all of the systems worked as expected. In addition, the various configurations of connection types, protocols and proxy usage behaved as expect.}
 
 \keywords{HTTP, Client-Server, Proxy Server, TCP, UDP, Go programming language}
 
@@ -61,14 +61,14 @@ Hyper Text Transfer Protocol (HTTP) is a fundamental component of the World Wide
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{HTTP DESCRIPTION}
 
-The Hyper Text Transfer Protocol has been in existence since 1990 \cite{rfc7230}. It is used by the World Wide Web as an application level protocol for transfer of information in a distributed system. It consists of two programs: a client and a server. The client, also commonly referred to as the browser, communicates with the server by sending it a HTTP request message. The server then responds with a HTTP response message. HTTP is a stateless protocol which means that the server has no knowledge of the client other than the information contained in the request. This is a limitation of HTTP which is overcome with the use of cookies \cite{kurose}. HTTP uses Transmission Control Protocol (TCP) as its underlying transport layer protocol \cite{kurose}. This means that HTTP does not need to worry about reliable data transfer issues such as out of sequence packets or packet loss.  
+The Hyper Text Transfer Protocol has been in existence since 1990 \cite{rfc7230}. It is used by the World Wide Web as an application level protocol for transfer of information in a distributed system. It consists of two programs: a client and a server. The client, also commonly referred to as the browser, communicates with the server by sending it an HTTP request message. The server then responds with an HTTP response message. HTTP is a stateless protocol which means that the server has no knowledge of the client other than the information contained in the request. This is a limitation of HTTP which is overcome with the use of cookies \cite{kurose}. HTTP uses Transmission Control Protocol (TCP) as its underlying transport layer protocol \cite{kurose}. This means that HTTP does not need to worry about reliable data transfer issues such as out of sequence packets or packet loss.  
 
 A typical HTTP communication can be described as follows: 
 \begin{enumerate}
-	\item A server sets up a TCP listener on one of its ports (an end point for network communication). The default port to HTTP is 80. 
+	\item A server sets up a TCP listener on one of its ports (an end point for network communication). The default port for HTTP is 80. 
 	\item A client initiates a TCP connection with the server (via the server's url) on the appropriate port. 
 	\item The client and server complete a `three way handshake' after which each of them have a socket (a virtual data connection between processes) which can be used to send and receive messages. Note that the port associated with these sockets will not be 80.
-	\item The client sends a HTTP request message to the server using its socket. This request is received by the server on its matching socket.
+	\item The client sends an HTTP request message to the server using its socket. This request is received by the server on its matching socket.
 	\item The server processes the request and sends an appropriate HTTP response to the client. This communication once again makes use of the sockets that have been set up. 
 	\item The server closes the TCP connection.
 	\item The client receives the HTTP response before the connection is closed.
@@ -76,7 +76,14 @@ A typical HTTP communication can be described as follows:
 
 	\subsection{Request and Response Messages} \label{formats}
 
-	HTTP is based on communication via request and response messages, both of which have specific formats and can take on a number of values. Both request and response messages contain three parts: the request/ response line, zero or more header lines and an optional body. The format of an HTTP request is shown in \figref{reqformat}. A number of common HTTP request methods are described in \tabref{httpreqs}. The format of an HTTP response is shown in \figref{respformat}. A number of common HTTP response codes are described in \tabref{httpresps}. 2xx responses indicate a success, 3xx responses indicate that client must submit a new request, 4xx responses indicate that the client is in error, and 5xx responses indicate that the server is in error.
+	HTTP is based on communication via request and response messages, both of which have specific formats and can take on a number of values. Both request and response messages contain three parts: the request/ response line, zero or more header lines and an optional body. The format of an HTTP request is very specific, as shown in \figref{reqformat}. A number of common HTTP request methods are described in \tabref{httpreqs}. The format of an HTTP response is once again specific, as shown in \figref{respformat}. \tabref{httpresps} describes number of common HTTP response codes. The responses fall into a few categories: 
+	\begin{itemize}
+	\item 1xx responses indicate that the client must wait for the server to finish processing the request
+	\item 2xx responses indicate a success
+	\item 3xx responses indicate that client must submit a new request
+	\item 4xx responses indicate that the client is in error
+	\item 5xx responses indicate that the server is in error
+	\end{itemize}
 
 	\begin{figure}[htbp]
 	\centering
@@ -117,7 +124,7 @@ A typical HTTP communication can be described as follows:
 			\hline
 			\textbf{Method} & \textbf{Description} \\ \hline
 			GET & Request data from the specified URL \\
-			HEAD & Request a response identical to the GET response but without the body so that the client can get the header values without retrieving the entire data \\
+			HEAD & Request a response identical to the GET response but without the body so that the client can get the header values without retrieving the body \\
 			POST & Request that the web server accept the data in body, this is often used for filling in forms\\
 			PUT & Request that the web server store the data in the body at the specified URL \\
 			DELETE & Request that the web server remove the resource stored at the specified URL  \\
@@ -182,7 +189,7 @@ A typical HTTP communication can be described as follows:
 
 	\subsection{Persistent and Non-persistent} \label{pvnp}
 
-	In HTTP version 1.0 (HTTP/1.0), all communication takes the form shown above \cite{rfc1945}. In other words a new TCP connection is made every time the client wants to make a request to the server. However, this approach has its disadvantages. The primary disadvantage is that it is wasteful to repeatedly make new connections when more than one request is going to be made. This is because setting up the TCP connection requires the three way handshake which is a time consuming operation. The solution to this, which was implemented in HTTP version 1.1 (HTTP/1.1), was to allow connections to persist for multiple request-response pairs \cite{rfc7230}. This is accomplished using the \emph{connection} header field, which can take on the values \emph{close} and \emph{keep-alive} for non-persistent and persistent connections respectively.
+	In HTTP version 1.0 (HTTP/1.0), all communication takes the form shown above \cite{rfc1945}. In other words, a new TCP connection is made every time the client wants to make a request to the server. However, this approach has its disadvantages. The primary disadvantage is that it is wasteful to repeatedly make new connections when more than one request is going to be made. This is because setting up the TCP connection requires the three way handshake which is a time consuming operation. The solution to this, which was implemented in HTTP version 1.1 (HTTP/1.1), was to allow connections to persist for multiple request-response pairs \cite{rfc7230}. This is accomplished using the \emph{connection} header field, which can take on the values \emph{close} and \emph{keep-alive} for non-persistent and persistent connections respectively.
 
 	\subsection{Proxy Servers and Caching}
 	\label{sec:proxy}
@@ -195,32 +202,32 @@ A typical HTTP communication can be described as follows:
 		\item The server responds by sending the exact same file to the client again.
 	\end{enumerate} 
 
-	The problem with the above situation is that the server is wasting time sending the client the file \texttt{Foo.bar} again because no changes have been made to the file. As a result the server could be slower to respond to other clients. This also increases congestion on the uplink of the Local Area Network of the client. The solution is to make use of a Proxy server (proxy), also known as a web cache. In this situation all HTTP requests are sent to the proxy by default. The proxy then forwards requests to the destination servers. The proxy acting as an intermediary between the clients and server can now store files sent from a server to a client. Now when a client requests the same file in quick succession, the server need only send it once. This solves both problems: the server has a reduced load and the uplink traffic is also reduced. Additionally, because LANs usually have network speeds orders of magnitude larger than the uplink, the client gets the data faster. By making use of the \emph{Last-Modified} and \emph{If-Modified-Since} headers, the proxy can make sure that it always serves the client with the most up to date version of the requested file. This is accomplished with the \emph{Conditional-Get} request. 	
+	The problem with the above situation is that the server is wasting time sending the client the file \texttt{Foo.bar} again because no changes have been made to the file. As a result, the server could be slower to respond to other clients. This also increases congestion on the uplink of the Local Area Network of the client. The solution is to make use of a Proxy server (proxy), also known as a web cache. In this situation, all HTTP requests are sent to the proxy by default. The proxy then forwards requests to the destination servers. The proxy acting as an intermediary between the clients and server can now store files sent from a server to a client. Now when a client requests the same file in quick succession, the server need only send it once. This solves both problems: the server has a reduced load and the uplink traffic is also reduced. Additionally, because LANs usually have network speeds orders of magnitude larger than the uplink, the client gets the data faster. By making use of the \texttt{Last-Modified} and \texttt{If-Modified-Since} headers, the proxy can make sure that it always serves the client with the most up-to-date version of the requested file. This is accomplished with the \emph{Conditional-Get} request. 	
 
 	\subsection{User Datagram Protocol}
 
-	Although HTTP makes use of TCP as it's transport layer protocol, a HTTP-like communication system can be implemented with the User Datagram Protocol (UDP). This would have the disadvantage that it provides unreliable communication. However, it could be faster than if TCP were used.
+	Although HTTP makes use of TCP as it's transport layer protocol, an HTTP-like communication system can be implemented with the User Datagram Protocol (UDP). This would have the disadvantage that it provides unreliable communication. However, it could be faster than if TCP were used.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{SYSTEM OVERVIEW} \label{sysover}
 
-The system is implemented using HTTP/1.1. This was chosen as it is the most common version of HTTP \cite{}. Some HTTP/1.0 features are still implemented for backwards compatibility and not all HTTP/1.1 features have been implemented.
+The system is implemented using HTTP/1.1. Some HTTP/1.0 features are still implemented for backwards compatibility and not all HTTP/1.1 features have been implemented.
 
 	\subsection{System Architecture}
 
-	As mentioned, the HTTP protocol follows the Client-Server model. This means that to properly demonstrate the implementation of HTTP, both a client and server are required. Additionally, in order to more extensively represent a real world application of HTTP, a proxy is required. All three of these systems have been implemented in the Go programming language developed by Google. It is a statically typed, imperative, garbage collected, compiled language. It was designed as a system programming language with specific support for networking and multi-threading.
+	As mentioned, the HTTP protocol follows the Client-Server model. This means that to properly demonstrate the implementation of HTTP, both a client and server are required. Additionally, in order to more extensively represent a real world application of HTTP, a proxy is required. All three of these systems have been implemented in the Go programming language developed by Google. It is a statically typed, imperative, garbage collected, compiled language. It was designed as a systems programming language with specific support for networking and multi-threading.
 
 	\subsubsection{Client:}
 
-	The client is responsible for sending HTTP requests to the server. These requests are generated based on user input. This process involves creating the HTTP request in the correct format, as discussed in \secref{formats}, creating a TCP or UDP connection and then sending the request in byte format. The client then waits for a response from the server, decomposing the response into its elements various elements, mentioned in \secref{formats}, and taking an appropriate action based on the response type and contents.
+	The client is responsible for sending HTTP requests to the server. These requests are generated based on user input. This process involves creating the HTTP request in the correct format, as discussed in \secref{formats}, creating a TCP or UDP connection and then sending the request in byte format. The client then waits for a response from the server, decomposing the response into its elements various elements, mentioned in \secref{formats}, and takes an appropriate action based on the response type and contents.
 
 	\subsubsection{Server:}
 
-	The server is responsible for listening for both TCP and UDP connections. Once a connection of either kind is made, the server must handle the client which involves, in the case of TCP, creating a new socket for the communication, and in the case of either TCP or UDP, receiving the HTTP request. The HTTP request must then be decomposed into its elements, discussed in \secref{formats}. Based on the type of request and its contents, the server must take an appropriate action as well as compose and send a HTTP response. Then, in the case of non-persistent TCP connections only, the sever must close the connection.
+	The server is responsible for listening for both TCP and UDP connections. Once a connection of either kind is made, the server must handle the client which involves, in the case of TCP, creating a new socket for the communication, and in the case of either TCP or UDP, receiving the HTTP request. The HTTP request must then be decomposed into its elements, discussed in \secref{formats}. Based on the type of request and its contents, the server must take an appropriate action as well as compose and send an HTTP response. Then, in the case of non-persistent TCP connections only, the sever must close the connection.
 
 	\subsubsection{Proxy Server:}
 
-	The proxy is responsible for taking all incoming requests from the client and forwarding them to the destination server. The proxy server must also cache web objects sent, via its self, from the server to the client. This makes use of the \texttt{If-Modified-Since} and \texttt{Last-Modified} header fields to allow the proxy to have the most up to date version of any object in its cache. The proxy acts as both a client and a server in the sense that it is viewed as a server from the perspective of the client and vice versa. As a result it has many of the responsibility listed above.
+	The proxy is responsible for taking all incoming requests from the client and forwarding them to the destination server. The proxy server must also cache web objects sent, via itself, from the server to the client. This makes use of the \texttt{If-Modified-Since} and \texttt{Last-Modified} header fields to allow the proxy to have the most up-to-date version of any object in its cache. The proxy acts as both a client and a server in the sense that it is viewed as a server from the perspective of the client and vice versa. As a result, it has many of the responsibilities listed above.
 
 \subsection{Features}
 
@@ -228,7 +235,7 @@ A number of features were implemented. The ability to use both TCP and UDP was i
 
 	\subsubsection{TCP vs UDP:}
 
-	This feature allows the user of the client to select the underlying transport layer protocol to use. TCP has the advantage that it offers some robustness in the form of protection against packet loss and delay. On the other hand UDP offers a higher speed than TCP due to its lack of data reliability services. The server implements this feature in terms of the ability to listen for both TCP and UDP connections and handle each appropriately. 
+	This feature allows the user of the client to select the underlying transport layer protocol to use. TCP has the advantage that it offers some robustness in the form of protection against packet loss and delay. On the other hand, UDP offers a higher speed than TCP due to its lack of data reliability services. The server implements this feature in terms of the ability to listen for both TCP and UDP connections and handle each appropriately. 
 
 	\subsubsection{Persistent vs Non-persistent:}
 
@@ -245,38 +252,38 @@ A number of features were implemented. The ability to use both TCP and UDP was i
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{DETAILED IMPLEMENTATION}
 
-HTTP is a large, complex protocol that has evolved over many years. As a result only a subset of the features was implemented in this system. The implemented features will be discussed in detail and important unimplemented features will be mentioned. Additionally the Go language and the implications of implementing the system in this language will be discussed. For example Go is a garbage collected language which greatly simplified the code due to the lack of manual memory management. Additionally, because Go is compiled and not interpreted it has a very fast run time.
+HTTP is a large, complex protocol that has evolved over many years. As a result, only a subset of the features were implemented in this system. The implemented features will be discussed in detail and important unimplemented features will be mentioned. Additionally, the Go language and the implications of implementing the system in this language will be discussed. For example Go is a garbage collected language which greatly simplified the code due to the lack of manual memory management. Additionally, because Go is compiled and not interpreted it has a very fast run time.
 
 	\subsection{Client}
 
-	The client must be capable of dealing with a number of scenarios when making requests to a server. If the server responds with a \texttt{503 Service Unavailable} then the client must resend the request as this is usually a temporary state. On the other hand if the server responds with a \texttt{301 Moved Permanently} or a \texttt{302 Found}, the client must resend the the request to the new location specified by the \texttt{location} header. If neither of those cases are true, then the client must get the header of the response message and using the \texttt{Content-Length} and \texttt{Transfer-Encoding} headers take an appropriate action to ensure that the whole response is received. Following this if the response is a \texttt{200 OK}, the client must search through the HTML for additional objects which must also be requested. This complex process is managed by recursively calling the \texttt{handleRequest} function which takes into account all of the above behaviors. \emph{Algorithm} \ref{handlereq} describes this behavior. Additionally the client must also be aware of whether or not the connection is set to \texttt{keep-alive} or \texttt{close} and keep the connection alive or close it respectively after the message has been received. When the response to a get message is received, the contents are written to disk. Note that a \texttt{map} is used to store the sources host names and the files to retrieve from them. Go maps are implemented using Hash tables which means that they have a search time of $\mathcal{O}$(1) \cite{map}.
+	The client must be capable of dealing with a number of scenarios when making requests to a server. If the server responds with a \texttt{503 Service Unavailable} then the client must resend the request as this is usually a temporary state. On the other hand if the server responds with a \texttt{301 Moved Permanently} or a \texttt{302 Found}, the client must resend the the request to the new location specified by the \texttt{location} header. If neither of those cases are true, then the client must get the header of the response message and using the \texttt{Content-Length} and \texttt{Transfer-Encoding} headers take an appropriate action to ensure that the whole response is received. Following this, if the response is a \texttt{200 OK}, the client must search through the HTML for additional objects which must also be requested. This complex process is managed by recursively calling the \texttt{handleRequest} function which takes into account all of the above behaviors. \emph{Algorithm} \ref{handlereq} describes this behavior. Additionally the client must also be aware of whether or not the connection is set to \texttt{keep-alive} or \texttt{close} and keep the connection alive or close it respectively after the message has been received. When the response to a GET message is received, the contents are written to disk. Note that a \texttt{map} is used to store the sources host names and the files to retrieve from them. Go \texttt{map}s are implemented using Hash tables which means that they have a search time of $\mathcal{O}$(1) \cite{map}.
 
 	\begin{algorithm}
 	\caption{\texttt{handleRequest} Pseudo Code}
 	\label{handlereq}
 		\begin{algorithmic}
-			\State handleRequest(method, url, body, host)
-			\State conn $\gets$ Dial(host)
-			\State request $\gets$ createRequest(method, url, body, host)
-			\State conn.Write(request)
-			\State response $\gets$ conn.Read()
-			\If{responseMethod $==$ 503}
-				\State handleRequest(method, url, body, host)
-				\State \Return
-			\EndIf
-			\If{responseMethod $==$ 301 or 302}
-				\State newURl $\gets$ responseLocation
-				\State handleRequest(method, newUrl, body, host)
-				\State \Return
-			\EndIf
-			\If {responseTransferEncoding $==$ chunked} 
-				\State keep reading until EoF marker
-			\ElsIf {responseContentLength $\ge$ bodySize}
-				\State keep reading until responseContentLength $==$ bodySize
-			\EndIf
-			\For{each source in body}
-				\State handleRequest(GET, srcURL, , srcHost)
-			\EndFor
+			\State \textbf{handleRequest(method, url, body, host)}
+				\State conn $\gets$ Dial(host)
+				\State request $\gets$ createRequest(method, url, body, host)
+				\State conn.Write(request)
+				\State response $\gets$ conn.Read()
+				\If{responseMethod $==$ 503}
+					\State handleRequest(method, url, body, host)
+					\State \Return
+				\EndIf
+				\If{responseMethod $==$ 301 or 302}
+					\State newURl $\gets$ responseLocation
+					\State handleRequest(method, newUrl, body, host)
+					\State \Return
+				\EndIf
+				\If {responseTransferEncoding $==$ chunked} 
+					\State keep reading until EoF marker
+				\ElsIf {responseContentLength $\ge$ bodySize}
+					\State keep reading until responseContentLength $==$ bodySize
+				\EndIf
+				\For{each source in body}
+					\State handleRequest(GET, srcURL, , srcHost)
+				\EndFor
 		\end{algorithmic}
 	\end{algorithm}
 
@@ -291,19 +298,19 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 
 	The settings data is stored in a text file. When the UDP protocol is selected, the connection used will be non-persistent regardless of the user's choice. When selecting the proxy the user must either specify "off" or the host address and port of the proxy server.
 
-	The client is missing some important functionality. The most important of which is HTTP Secure (HTTPS), which uses Secure Socket Layer (SSL). A large amount of websites of the Internet now require SSL such as Google and Wikipedia. Without HTTPS the client is unable to access these websites. The main advantage of HTTPS is the improved security and authentication of the visited website which improves privacy and integrity in the exchange of data. This is an increasingly important aspect of Internet communication. This was not added due to time constraints.
+	The client is missing some important functionality. The most important of which is HTTP Secure (HTTPS), which uses Secure Socket Layer (SSL). A large amount of websites on the Internet now require SSL such as Google and Wikipedia. Without HTTPS the client is unable to access these websites. The main advantage of HTTPS is the improved security and authentication of the visited website which improves privacy and integrity in the exchange of data. This is an increasingly important aspect of Internet communication. This was not added due to time constraints.
 
 	Another important feature that was not implemented was timeout periods. The client does not have a time out period after which it will cease to wait for a response. This means that if the server's response does not reach the client, it will continue to listen for it. This could be easily implemented using the RTT timing code, however, due to time constraints this was not completed.
 
 	\subsection{Server}
 
-	As mentioned the server uses multi-threading to support multiple TCP connections at a time alongside a UDP connection. This is done by creating two threads when the server starts - one for the UDP listener and one for the TCP listener. Each of these then listens for a connection and when one is made it handles the client appropriately. The UDP server communicates with the client in a connectionless manner and as a result can conduct all of the communication on the port used for listening. The TCP server on the other hand uses connections for communication and as a result must create a new port to communicate with the client on. In order to prevent this from locking up with system for long or persistent communication sessions, every time a new client makes a connection, a new thread is created with the purpose of handling the communication on a new port. \texttt{goroutines} are very lightweight which means that they scale well with size and will allow the server to support thousands of simultaneous connections. Note that \texttt{goroutines} are executed concurrently which is not necessarily in parallel. What this means is that although the system will not lock out connections while one is being handled, the system will slow down with too many connections \cite{doxsey}. \texttt{goroutines} also have the advantage that they are trivial to use when code makes proper use of function calls, the function is simply called with the \texttt{go} keyword and the Go compiler takes care of the rest of the underlying complexity. Although not used in this project, Go supports communication across threads using \texttt{channels}.
+	As mentioned the server uses multi-threading to support multiple TCP connections at a time alongside a UDP connection. This is done by creating two threads when the server starts - one for the UDP listener and one for the TCP listener. Each of these then listens for a connection and when one is made it handles the client appropriately. The UDP server communicates with the client in a connectionless manner and as a result can conduct all of the communication on the port used for listening. The TCP server, on the other hand, uses connections for communication and as a result must create a new port to communicate with the client on. In order to prevent this from locking up the system for long or persistent communication sessions, every time a new client makes a connection, a new thread is created with the purpose of handling the communication on a new port. \texttt{goroutines} are very lightweight which means that they scale well with volume and will allow the server to support thousands of simultaneous connections \cite{doxsey}. Note that \texttt{goroutines} are executed concurrently which is not necessarily in parallel. What this means is that although the system will not lock out connections while one is being handled, the system will slow down with too many connections. \texttt{goroutines} also have the advantage that they are trivial to use when code makes proper use of function calls, the function is simply called with the \texttt{go} keyword and the Go compiler takes care of the rest of the underlying complexity. Although not used in this project, Go supports communication across threads using \texttt{channels}.
 
-	The server accepted the following requests: GET, HEAD, POST, PUT and DELTE. These were considered to be the most important for demonstrating the HTTP protocol. The GET, HEAD and POST methods were the original three methods in HTTP/1.0, while the PUT and DELTE methods provide the missing functionality for the CRUD operations which are very important for many applications which make use of RESTful APIs \cite{guinard}. Other methods that would be useful are those in \tabref{httpreqs}. The PATCH method in particular would be an important addition as it allows much more flexible Update operations by facilitating partial updates of files. This means that when a client wishes to overwrite part of a file they do not need to send the whole file to the server, rather they send only the part they wish to update which saves bandwidth. The OPTIONS method is very useful for allowing clients to query which methods the server accepts. This would reduce the amount of \texttt{400 Bad Request} responses as a result of requests not being understood. These methods were not added due to time constraints. The POST and GET method implemented by the server cannot be used to fill in forms using the \texttt{application/x-www-form-urlencoded} content type. This was not implemented due to time constraints.
+	The server accepts the following requests: GET, HEAD, POST, PUT and DELTE. These were considered to be the most important for demonstrating the HTTP protocol. The GET, HEAD and POST methods were the original three methods in HTTP/1.0 \cite{rfc1945}, while the PUT and DELTE methods provide the missing functionality for the CRUD operations, which are very important for many applications which make use of RESTful APIs \cite{guinard}. Other methods that would be useful are those specified in \tabref{httpreqs}. The PATCH method in particular would be an important addition as it allows much more flexible Update operations by facilitating partial updates of files. This means that when a client wishes to overwrite part of a file they do not need to send the whole file to the server, rather they send only the part they wish to update which saves bandwidth. The OPTIONS method is very useful for allowing clients to query which methods the server accepts. This would reduce the amount of \texttt{400 Bad Request} responses as a result of requests not being understood. The OPTIONS and PATCH methods were not added due to time constraints. The POST and GET methods implemented by the server cannot be used to fill in forms using the \texttt{application/x-www-form-urlencoded} content type. This was not implemented due to time constraints.
 
-	The server is capable of using the following responses: \texttt{505 HTTP Version Not Supported}, \texttt{404 Not Found}, \texttt{400 Bad Request}, \texttt{304 Not Modified}, \texttt{301 Moved Permanently}, and \texttt{200 OK}. These methods cover the majority of common situations. However, some key methods are missing. The \texttt{302 Found} method is useful in real world systems where resources are temporarily moved. Additionally a wider range of 2xx responses are also useful as they give the client more information about the action that has been taken by the server in addition to the fact that their request was successful. Once again, these were not added due to time constraints. The \texttt{403 Forbidden} response would be useful to differentiate between invalid and forbidden requests from the client.
+	The server is capable of using the following responses: \texttt{505 HTTP Version Not Supported}, \texttt{404 Not Found}, \texttt{400 Bad Request}, \texttt{304 Not Modified}, \texttt{301 Moved Permanently}, and \texttt{200 OK}. These methods cover the majority of common situations. However, some key methods are missing. The \texttt{302 Found} method is useful in real world systems where resources are temporarily moved. Additionally, a wider range of 2xx responses are also useful as they give the client more information about the action that has been taken by the server in addition to the fact that their request was successful. Once again, these were not added due to time constraints. The \texttt{403 Forbidden} response would be useful to differentiate between invalid and forbidden requests from the client.
 
-	The server implements a very limited subset of headers. These are: \texttt{Content-Length}, \texttt{Last-Modified}, \texttt{Location}, \texttt{Content-Language}, \texttt{Date} and \texttt{Server}. The \texttt{Content-Length} header is for HTTP/1.0 backwards compatibility. The \texttt{Last-Modified} header, along side the \texttt{304 Not Modified} response, is for use with proxy servers. The \texttt{Location} header is used in conjunction with the \texttt{301 Moved Permanently} response for redirections. The server can also accept a range of headers. Of particular interest here is the \texttt{If-Modified-Since} header which is sent by a proxy to check if it has the most up to date version of a file. An important header that needs to be added is \texttt{Content-Type}, which gives the client important information about the body of the message. 
+	The server implements a very limited subset of headers. These are: \texttt{Content-Length}, \texttt{Last-Modified}, \texttt{Location}, \texttt{Content-Language}, \texttt{Date} and \texttt{Server}. The \texttt{Content-Length} header is for HTTP/1.0 backwards compatibility. The \texttt{Last-Modified} header, along side the \texttt{304 Not Modified} response, is for use with proxy servers. The \texttt{Location} header is used in conjunction with the \texttt{301 Moved Permanently} response for redirections. The server can also accept a range of headers. Of particular interest here is the \texttt{If-Modified-Since} header which is sent by a proxy to check if it has the most up-to-date version of a file. An important header that needs to be added is \texttt{Content-Type}, which gives the client important information about the body of the message. 
 
 	Another feature that the server does not support is the use of chunked encoding which allows for data to be streamed. This is particularly useful for dynamically generated content where the length of the content is not known before hand and the \texttt{Content-Length} header cannot be used. Instead the \texttt{Transfer-Encoding} header is used with the value \texttt{chunked}. This lets the client know that they should continue receiving data until the End-Of-File marker is received. This was not implemented because the server does not have any dynamically generated pages and can always use \texttt{Content-Length} as would have been done in HTTP/1.0.
 
@@ -313,7 +320,7 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 
 	\subsection{Proxy}
 
-	The proxy, much like the server, is multi-threaded using \texttt{goroutines}. This allows the proxy to serve multiple clients at a time. The proxy works with both persistent and non-persistent TCP, however it is not implemented with UDP. 
+	The proxy, much like the server, is multi-threaded using \texttt{goroutines}. This allows the proxy to serve multiple clients at a time. The proxy works with both persistent and non-persistent TCP, however, it is not implemented with UDP. 
 
 	In its most basic sense the proxy's behavior can be described as follows:
 
@@ -521,7 +528,7 @@ HTTP is a large, complex protocol that has evolved over many years. As a result 
 
 \section{CONCLUSION}
 
- The use of the Go language allowed for a simple and elegant solution with its \texttt{goroutines}, which allowed for seamless concurrency, powerful high level features such as \texttt{map}s and garbage collection, which promoted clean and concise code, and fast run time. A subset of HTTP large enough to perform basic requests and responses in HTTP/1.1 was implemented. However, there is a large room for improvements in this aspect as well as in the limited features of the proxy server. The web client was able to access pages hosted on both the Internet and the server. Testing with Wireshark revealed that all of the systems worked as expected. In addition the various configurations of connection types, protocols and proxy usage behaved as expect.
+ The use of the Go language allowed for a simple and elegant solution with its \texttt{goroutines}, which allowed for seamless concurrency, powerful high level features such as \texttt{map}s and garbage collection, which promoted clean and concise code, and fast run time. A subset of HTTP large enough to perform basic requests and responses in HTTP/1.1 was implemented. However, there is a large room for improvements in this aspect as well as in the limited features of the proxy server. The web client was able to access pages hosted on both the Internet and the server. Testing with Wireshark revealed that all of the systems worked as expected. In addition, the various configurations of connection types, protocols and proxy usage behaved as expect.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
