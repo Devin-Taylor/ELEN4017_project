@@ -5,6 +5,8 @@
 
 Follow the instructions on the [Go Webpage](https://golang.org/doc/install) to install Go.
 
+__NOTE:__ When setting the `$GOPATH` as mentioned in the above link, set it to the project root directory (i.e. one directory above the `src/` folder)
+
 **Directory Structure**
 
 - Project Root
