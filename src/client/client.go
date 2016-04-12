@@ -115,7 +115,7 @@ func handleRequest(method string, url string, body string, host string) {
 	contentLen, err := strconv.Atoi(headers["Content-Length"])
 	if err == nil {
 		// get the remainer of data that needs to be read
-		lengthDiff = contentLen + headerSize - 4096
+		lengthDiff = contentLen + headerSize - n
 	} else {
 		lengthDiff = -1
 	}
@@ -142,7 +142,7 @@ func handleRequest(method string, url string, body string, host string) {
 			n, err = conn.Read(buf[0:])
 			lib.CheckError(err)
 			response += string(buf[0:n])
-			lengthDiff -= 4096
+			lengthDiff -= n
 		}
 		
 	}
