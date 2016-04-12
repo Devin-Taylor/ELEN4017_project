@@ -107,7 +107,8 @@ func handleTCPClient(conn net.Conn) {
 		}
 
 		// convert message to string
-		message := string(buf[0:])		
+		message := string(buf[0:])
+		fmt.Println(message)		
 
 		// compose reponse to message
 		response := composeResponse(message, strings.Split(conn.LocalAddr().String(), ":")[0])

@@ -44,6 +44,7 @@ func handleClient(conn net.Conn) {
 		}
 		// convert message to string and decompose it
 		message := string(buf[0:])
+		fmt.Println("*******CLIENT*******")
 		fmt.Println(message)
 		method, url, version, headers, body := lib.DecomposeRequest(message)
 		var host string
@@ -65,6 +66,8 @@ func handleClient(conn net.Conn) {
 			// get the response message from the server
 			serverResponse := handleServer(message, host)
 			// check the server for the file and if it has been modified
+			fmt.Println("*******SERVER*******")
+			fmt.Println(serverResponse)
 			isUpdated, newResponse, newTime := getNewResponse(serverResponse, strings.Split(host, ":")[0], url)
 			// if file has been modified then write new file to cache
 			if isUpdated {
@@ -87,7 +90,6 @@ func handleClient(conn net.Conn) {
 func getNewResponse(serverResponse string, host string, url string) (bool, *lib.ResponseMessage, string) {
 	version, code, status, headers, body := lib.DecomposeResponse(serverResponse)
 
-	fmt.Println(code)
 	// if 304 the has not been modified - so find file in cache
 	if code == "304" {
 		file, _ := os.Open("../../cache/"+host+url)
