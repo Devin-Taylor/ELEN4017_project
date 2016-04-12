@@ -18,7 +18,7 @@ const path = "../../objects/"
 
 func main() {
 	// set the port on which to listen
-	service := ":1235"
+	service := ":80"
 
 	go startTCPServer(service)
 

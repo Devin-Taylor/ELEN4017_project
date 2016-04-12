@@ -67,7 +67,15 @@ func handleClient(conn net.Conn) {
 			serverResponse := handleServer(message, host)
 			// check the server for the file and if it has been modified
 			fmt.Println("*******SERVER*******")
-			fmt.Println(serverResponse)
+			version, code, status, headers, _ := lib.DecomposeResponse(serverResponse)
+			var allHeaders string
+
+			for key, value := range headers {
+				allHeaders = allHeaders + key + " " + value + "\n"
+			}
+
+			content := version + " " + code + " " + status + "\n" + allHeaders + "\n"
+			fmt.Println(content)
 			isUpdated, newResponse, newTime := getNewResponse(serverResponse, strings.Split(host, ":")[0], url)
 			// if file has been modified then write new file to cache
 			if isUpdated {
@@ -202,7 +210,7 @@ func handleServer(relayRequest string, host string) string {
 	// close the connection after this function executes
 	defer conn.Close()
 
-	var buf [65000]byte
+	var buf [256]byte
 	n, err := conn.Read(buf[0:])
 	lib.CheckError(err)
 
@@ -215,7 +223,7 @@ func handleServer(relayRequest string, host string) string {
 
 	contentLen, err := strconv.Atoi(headers["Content-Length"])
 	if err == nil {
-		lengthDiff = contentLen + headerSize - 65000
+		lengthDiff = contentLen + headerSize - 256
 	} else {
 		lengthDiff = -1
 	}
@@ -224,7 +232,7 @@ func handleServer(relayRequest string, host string) string {
 
 		for {
 			// get message
-			var buf [65000]byte
+			var buf [256]byte
 			// read input 
 			n, err = conn.Read(buf[0:])
 			lib.CheckError(err)
@@ -235,12 +243,12 @@ func handleServer(relayRequest string, host string) string {
 		}
 	} else {
 		for lengthDiff > 0 {
-			var buf [65000]byte
+			var buf [256]byte
 			// read input 
 			n, err = conn.Read(buf[0:])
 			lib.CheckError(err)
 			response += string(buf[0:n])
-			lengthDiff -= 65000
+			lengthDiff -= 256
 		}
 		
 	}
