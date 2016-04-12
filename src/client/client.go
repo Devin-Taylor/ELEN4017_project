@@ -73,8 +73,8 @@ func handleRequest(method string, url string, body string, host string) {
 	// write request to connection
 	_, err = conn.Write(request.ToBytes())
 	lib.CheckError(err)
-	// set message buffer, 65000 bytes is message maximum
-	var buf [65000]byte
+	// set message buffer, 4096 bytes is message maximum
+	var buf [4096]byte
 	// read input from connection
 	n, err := conn.Read(buf[0:])
 	lib.CheckError(err)
@@ -91,7 +91,6 @@ func handleRequest(method string, url string, body string, host string) {
 		case "301","302":
 			// if redirected get new destination
 			newHost, newUrl := getRedirectLocation(headers)
-			fmt.Println(host, strings.Split(conn.RemoteAddr().String(), ":")[0], host == strings.Split(conn.RemoteAddr().String(), ":")[0])
 			if newHost == "localhost" || host == strings.Split(conn.RemoteAddr().String(), ":")[0] || host == conn.RemoteAddr().String() {
 				port = ":1235"
 			} else {
@@ -116,7 +115,7 @@ func handleRequest(method string, url string, body string, host string) {
 	contentLen, err := strconv.Atoi(headers["Content-Length"])
 	if err == nil {
 		// get the remainer of data that needs to be read
-		lengthDiff = contentLen + headerSize - 65000
+		lengthDiff = contentLen + headerSize - 4096
 	} else {
 		lengthDiff = -1
 	}
@@ -124,7 +123,7 @@ func handleRequest(method string, url string, body string, host string) {
 	if strings.ToUpper(headers["Transfer-Encoding"]) == "CHUNKED" {
 		// itterate until all data is read in
 		for {
-			var buf [65000]byte
+			var buf [4096]byte
 			// read input 
 			n, err = conn.Read(buf[0:])
 			lib.CheckError(err)
@@ -136,13 +135,14 @@ func handleRequest(method string, url string, body string, host string) {
 		}
 	} else {
 		// itterate until no more data to read in 
+		
 		for lengthDiff > 0 {
-			var buf [65000]byte
+			var buf [4096]byte
 			// read input 
 			n, err = conn.Read(buf[0:])
 			lib.CheckError(err)
 			response += string(buf[0:n])
-			lengthDiff -= 65000
+			lengthDiff -= 4096
 		}
 		
 	}
@@ -157,7 +157,6 @@ func handleRequest(method string, url string, body string, host string) {
 		sourceMap := retrieveSources(body)
 		// for each source - fetch it
 		for host, url = range sourceMap {
-			fmt.Println(host, strings.Split(conn.RemoteAddr().String(), ":")[0], host == strings.Split(conn.RemoteAddr().String(), ":")[0])
 			if host == "localhost" || host == strings.Split(conn.RemoteAddr().String(), ":")[0] || host == conn.RemoteAddr().String() {
 				port = ":1235"
 			} else {
@@ -165,9 +164,10 @@ func handleRequest(method string, url string, body string, host string) {
 			}
 			ip,_ := net.ResolveIPAddr("ip", host)
 			// if the connection is set to close of the IP is different from the original HTML IP the establish a new connection
-			if config.Connection != "keep-alive" || ip.String() != strings.Split(conn.LocalAddr().String(),":")[0] {
+			if config.Connection != "keep-alive" || ip.String() != strings.Split(conn.RemoteAddr().String(),":")[0] {
 				handleRequest("GET", url, "", host+port)
 			} else {
+
 				url = url
 				host = host+port
 				body = ""
@@ -236,7 +236,6 @@ func getUserInputs() (string, string, string) {
 // outputs - fileName: string representing the name of the file
 func getFileName(value string) string {
 	StopIndex := strings.LastIndex(value, "/")
-	fmt.Println(value, StopIndex)
 	fileName := value[StopIndex:len(value)]
 
 	return fileName
@@ -267,16 +266,14 @@ func retrieveSources(body string) map[string]string {
 // function responsible for printing the servers reply to the console
 // inputs - response: string containing the servers response including headers and body
 func printToConsole(response string) {
-
-	version, code, status, headers, body := lib.DecomposeResponse(response)
-
+	version, code, status, headers, _ := lib.DecomposeResponse(response)
 	var allHeaders string
 
 	for key, value := range headers {
 		allHeaders = allHeaders + key + ": " + value + "\n"
 	}
 
-	content := version + " " + code + " " + status + "\n" + allHeaders + "\n\n" + body
+	content := version + " " + code + " " + status + "\n" + allHeaders + "\n"
 	fmt.Println(content) 
 }
 // function responsible for obtaining the size of the headers that are returned from the server
