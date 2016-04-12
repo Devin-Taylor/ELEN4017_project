@@ -299,7 +299,6 @@
 \newcounter{section}
 \newcounter{subsection}[section]
 \newcounter{subsubsection}[subsection]
-\newcounter{paragraph}[subsubsection]
 
 \def\thesection{\arabic{section}}
 \def\thesubsection{\thesection.\arabic{subsection}}
