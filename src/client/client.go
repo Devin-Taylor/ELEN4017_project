@@ -73,8 +73,8 @@ func handleRequest(method string, url string, body string, host string) {
 	// write request to connection
 	_, err = conn.Write(request.ToBytes())
 	lib.CheckError(err)
-	// set message buffer, 4096 bytes is message maximum
-	var buf [4096]byte
+	// set message buffer, 65000 bytes is message maximum
+	var buf [65000]byte
 	// read input from connection
 	n, err := conn.Read(buf[0:])
 	lib.CheckError(err)
@@ -123,7 +123,7 @@ func handleRequest(method string, url string, body string, host string) {
 	if strings.ToUpper(headers["Transfer-Encoding"]) == "CHUNKED" {
 		// itterate until all data is read in
 		for {
-			var buf [4096]byte
+			var buf [65000]byte
 			// read input 
 			n, err = conn.Read(buf[0:])
 			lib.CheckError(err)
@@ -137,7 +137,7 @@ func handleRequest(method string, url string, body string, host string) {
 		// itterate until no more data to read in 
 		
 		for lengthDiff > 0 {
-			var buf [4096]byte
+			var buf [65000]byte
 			// read input 
 			n, err = conn.Read(buf[0:])
 			lib.CheckError(err)

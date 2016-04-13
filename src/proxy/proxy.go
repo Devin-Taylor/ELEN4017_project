@@ -210,7 +210,7 @@ func handleServer(relayRequest string, host string) string {
 	// close the connection after this function executes
 	defer conn.Close()
 
-	var buf [4096]byte
+	var buf [65000]byte
 	n, err := conn.Read(buf[0:])
 	lib.CheckError(err)
 
@@ -232,7 +232,7 @@ func handleServer(relayRequest string, host string) string {
 
 		for {
 			// get message
-			var buf [4096]byte
+			var buf [65000]byte
 			// read input 
 			n, err = conn.Read(buf[0:])
 			lib.CheckError(err)
@@ -243,7 +243,7 @@ func handleServer(relayRequest string, host string) string {
 		}
 	} else {
 		for lengthDiff > 0 {
-			var buf [4096]byte
+			var buf [65000]byte
 			// read input 
 			n, err = conn.Read(buf[0:])
 			lib.CheckError(err)
