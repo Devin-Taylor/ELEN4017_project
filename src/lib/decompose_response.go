@@ -43,7 +43,7 @@ func DecomposeResponse(response string) (string, string, string, map[string]stri
 		body := strings.Join(bodyLines, cr + lf)
 
 		// split the response line into it's components
-		responses := strings.Split(responseLine, sp)
+		responses := strings.SplitN(responseLine, sp, 3)
 		status := responses[2]
 		code := responses[1]
 		version := responses[0]

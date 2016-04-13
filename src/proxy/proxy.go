@@ -113,6 +113,12 @@ func getNewResponse(serverResponse string, host string, url string) (bool, *lib.
 		html := string(b)
 		response.EntityBody = html
 
+		stat, err := os.Stat("../../cache/"+host+url)
+     		if err != nil {
+        		fmt.Println(err)
+     		}
+     		response.HeaderLines["Content-Length"] = strconv.FormatInt(stat.Size(),10)
+
 		return false, response, ""
 	} 
 
